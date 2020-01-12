@@ -1,0 +1,469 @@
+<html lang="en">
+    <head>
+        <title>Home - Absensi SMAN 1 CIBADAK</title>
+        <meta name='viewport' content="width=device-width, initial-scale=1.0">
+        <link href="/assets/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+        <script src="/assets/js/jquery-3.4.1.js"></script>
+        <script src="/assets/js/bootstrap.bundle.js"></script>
+        <script src="/assets/js/bootstrap.js"></script>
+        <script src="/assets/js/jquery-ui.js" type="text/javascript"></script>
+        <link href="/assets/css/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    </head>
+
+    <body style="background-color: #afafaf;">
+        <div class="card-deck" style="padding-top:1%;">
+            <div class="col-sm-3">
+                <div class="card bg-light border-0">
+                    <div class="card-header bg-dark text-white">
+                        <h6>Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="status-view">
+                        </div>
+                        <hr>
+                        <a data-toggle="modal" data-target="#modal-change" href="#">Ganti Password</a><br>
+                        <a href="/logout">Keluar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-5">
+                <div class="card bg-light border-0">
+                    <div class="card-header text-white bg-dark">
+                        <h6>Dashboard</h6>
+                    </div>
+                    <div class="card-body">
+                        {{#if access }}
+                            {{#if attend }}
+                                <center><h6>Anda sudah melakukan konfirmasi kehadiran</h6></center>
+                            {{else}}
+                                <button type="button" class="btn btn-primary btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-konfirm" id="conf-button" href="#">Konfirmasi Kehadiran</button>
+                            {{/if}}
+                            <hr>
+                            {{#if permission}}
+                                <button type="submit" class="btn btn-success btn-lg text-light" style="width: 100%;" data-toggle="modal" data-target="#modal-izin" href="#">Ajukan Surat Izin</button><p></p>
+                                <button type="submit" class="btn btn-danger btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-lapor" href="#">Ajukan Pelaporan</button>
+                            {{/if}}
+                        {{else}}
+                            <center><h6>Waktu untuk melakukan konfirmasi kehadiran tidak berlaku</h6></center>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="card bg-light border-0">
+                    <div class="card-header text-white bg-dark">
+                        <table style="width:100%" class="text-white"><tr><td><a>Kehadiran Kelas</a></td><td><a href="#" onclick="reload_mate()">R</a></td></tr></table>
+                    </div>
+                    <div class="card-body">
+                        <div id="classmate-view"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <div class="modal fade bd-example-modal-md" id="modal-change" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Ganti Password</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                        <input class="form-control" pattern=".{6,}" type="password" name="pwd_new" id="pwd_new" placeholder="Password Baru" required><p></p>
+                        <input class="form-control" pattern=".{6,}" type="password" name="pwd_new_conf" id="pwd_new_conf" placeholder="Password Baru (ulangi)" required><p></p>
+                        <div class="modal-footer">
+                            <button onclick="check_pwd()" class="btn btn-primary" >Konfirmasi</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        </div>
+                    <div id="not"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade bd-example-modal-md" id="modal-konfirm" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Konfirmasi Kehadiran</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <h6>
+                        Segala keputusan akan dimintai pertanggung-jawaban.
+                        Jika terdapat kesalahan dalam pengisian kehadiran, harap hubungi admin.
+                    </h6>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="confirm()" >Konfirmasi</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade bd-example-modal-md" id="modal-izin" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Ajukan Surat</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <form id="upload-surat" method="post" action="/upload_surat" enctype="multipart/form-data">
+                        <div class="dropdown">
+                            <button class="btn btn-success dropdown-toggle" type="button" id="dropDownNama" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Nama
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropDownNama">
+                                <a class="dropdown-item" href="#">tes</a>
+                                <a class="dropdown-item" href="#">tas</a>
+                                <a class="dropdown-item" href="#">tos</a>
+                            </div>
+                        </div><p></p>
+
+                        <span id="rbutton">
+                            <input type="radio" name="tipe" id="tipe" value="SAKIT"> Sakit<br>
+                            <input type="radio" name="tipe" id="tipe" value="IZIN"> Izin<br>
+                            <input type="radio" name="tipe" id="tipe" value="lain"> Lainnya<input type="text" class="form-control" name="lain_text" id="lain_text">
+                        </span><p></p>
+                        <table>
+                            <tr>
+                            <th><input class="form-control" autocomplete="off" type="text" name="tgl_dari" id="tgl_dari" placeholder="Dari Tanggal" required></th>
+                            <th><input class="form-control" autocomplete="off" type="text" name="tgl_sampai" id="tgl_sampai" placeholder="Sampai Tanggal" required></th>
+                            </tr>
+                        </table><p></p>
+                        
+
+                        <textarea class="form-control" name="ket" id="ket" placeholder="Keterangan(opsional)"></textarea><p></p>
+                        
+                        <input id="photos-input" type="file" name="photos[]" multiple="multiple" ><p></p>
+
+                        <div id="album">
+                        </div>
+
+                        <div class="modal-footer">
+                            <input class="btn btn-primary" type="submit" name="Ajukan Uploads" value="Ajukan" />
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade bd-example-modal-md" id="modal-lapor" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Ajukan Pelaporan</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <form id="upload-lapor" method="post" action="/upload_lapor" enctype="multipart/form-data">
+                        <input class="form-control" type="text" id="perihal" placeholder="Perihal" required><p></p>
+                        <textarea class="form-control" id="keterangan" placeholder="Keterangan" required></textarea><p></p>
+
+                        <div id="album2">
+                        </div>
+
+                        <div class="modal-footer">
+                            <input class="btn btn-primary" type="submit" name="Ajukan Uploads" value="Ajukan" />
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</html>
+<script>
+    var dateToday = new Date();
+    reload_mate();
+
+    $('#tgl_dari').datepicker({
+        dateFormat: 'dd/mm/yy',
+        beforeShowDay: function(day) {
+            var day = day.getDay();
+            if (day == 0) {
+                return [false, "somecssclass"]
+            } else {
+                return [true, "someothercssclass"]
+            }
+        },
+        minDate: dateToday
+    });
+    $('#tgl_sampai').datepicker({
+        dateFormat: 'dd/mm/yy',
+        beforeShowDay: function(day) {
+            var day = day.getDay();
+            if (day == 0) {
+                return [false, "somecssclass"]
+            } else {
+                return [true, "someothercssclass"]
+            }
+        },
+        minDate: dateToday
+    });
+    
+    var tipe;
+    var to_name;
+    var text;
+    var from_date;
+    var to_date;
+
+    function confirm(){
+        $.ajax({
+            method: 'get',
+            url: '/confirm_attend',
+            success: function(res){
+                if(res == true){
+                    $('#modal-konfirm').modal('toggle');
+                    alert("Sukses");
+                    $("#conf-button").attr("disabled", true);
+                }
+            }
+        })
+    }
+
+    function reload_mate(){
+        $.ajax({
+            method: 'get',
+            url: '/get_classmate',
+            success: function(res){
+                html = '';
+                html += '<table class="table table-bordered">';
+                var total = {};
+                total.hadir = 0;
+                total.sakit = 0;
+                total.izin = 0;
+                total.absen = 0;
+                for(i=0; i<res.length; i++){
+                    s = "";
+                    for(var key in res[i]){
+                        value = res[i][key];
+                        if(value.length == 1){
+                            if(value == 'H'){
+                                s = "&#x2713";
+                                total.hadir += 1;
+                            }else if(value == 'A'){
+                                s = "A";
+                                total.absen += 1;
+                            }else if(value == 'I'){
+                                s = "I";
+                                total.izin += 1;
+                            }else if(value == 'S'){
+                                s = "S";
+                                total.sakit += 1;
+                            }else{
+                                s = "-";
+                            }
+                        }
+                    }
+                    html += '<tr><td>'+res[i].name+'</td><td>'+s+'</td></tr>';
+                }
+                html += '</table><hr>';
+                html += '<h6>Total</h6>';
+                html += '<table style="width: 100%">';
+                html += '<tr><td>Hadir</td><td>'+total.hadir+'</td></tr>';
+                html += '<tr><td>Sakit</td><td>'+total.sakit+'</td></tr>';
+                html += '<tr><td>Izin</td><td>'+total.izin+'</td></tr>';
+                html += '<tr><td>Tanpa Keterangan</td><td>'+total.absen+'</td></tr>';
+                html += '</table>';
+
+                $('#classmate-view').html(html);
+            }
+
+        })
+    }
+
+    function cutName(name){
+        var n = name.split(" ");
+        var res = "";
+        res += n[0];
+        if(n.length > 2){
+            for(i=1; i<n.length; i++){
+                res += + " " +n[i][0]+ ". ";
+            }
+        }else{
+            res += name;
+        }
+        return res;
+    }
+
+    $.ajax({
+        method: 'get',
+        url: '/get_status',
+        success: function(res){
+            html = '';
+            html += '<table>';
+            html += '<tr><td><h6>'+res.name+'</h6></td></tr>';
+            html += '<tr><td><h6>'+res.kelas+'</h6></td></tr>';
+            html += '<tr><td><h6>'+res.induk+'</h6></td></tr>';
+            html += '<tr><td><hr></td></tr>';
+            html += '<tr><td>Kehadiran</td><td>'+res.hadir+'</td></tr>';
+            html += '<tr><td>Sakit</td><td>'+res.sakit+'</td></tr>';
+            html += '<tr><td>Izin</td><td>'+res.izin+'</td></tr>';
+            html += '<tr><td>Tanpa Keterangan</td><td>'+res.absen+'</td></tr>';
+            html += '</table>'
+
+            $('#status-view').html(html);
+        }
+    })
+
+
+    $("#rbutton input[type=radio]").each(function(i){
+        $(this).click(function () {
+            if(i==2) {
+                $("#lain_text").removeAttr("disabled");  
+            }
+            else {
+                $("#lain_text").attr("disabled", "disabled");
+            }
+            tipe = $(this).val();
+        });
+    });
+
+    $(".dropdown-menu a").click(function(){
+        name_item = $(this).text();
+        $('.dropdown-toggle').text(name_item);
+        to_name = name_item;
+    })
+
+    $('#upload-lapor').on('submit', function (event){
+        event.preventDefault();
+
+        let subject = $('#perihal').val();
+        let text = $('#keterangan').val();
+
+        formData = new FormData();
+
+        formData.append('text', text);
+        formData.append('subject', subject);
+        formData.append('from_date', "");
+        formData.append('to_date', "");
+        formData.append('to_name', "LAPORAN");
+
+        $.ajax({
+            url: '/upload_lapor',
+            method: 'post',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(resp){
+                console.log(resp);
+                $('#album2').html("Sukses");
+                $('#perihal').val("");
+                $('#keterangan').val("");
+            }
+        });
+
+        $('#album2').html("Sukses");
+        $('#perihal').val("");
+        $('#keterangan').val("");
+    });
+
+    $('#upload-surat').on('submit', function (event) {
+        event.preventDefault();
+
+        var files = $('#photos-input').get(0).files,
+            formData = new FormData();
+
+        if ( $.trim($('.dropdown-toggle').text()) == 'Nama') {
+            alert('Pilih nama siswa');
+            return false;
+        }
+
+        if (files.length === 0) {
+            alert('Upload minimal 1 foto surat keterangan');
+            return false;
+        }
+
+        if (files.length > 3) {
+            alert('Upload maksimal 3 foto surat keterangan');
+            return false;
+        }
+
+        for (var i=0; i < files.length; i++) {
+            var file = files[i];
+            formData.append('photos[]', file, file.name);
+        }
+
+        subject = tipe;
+        if(tipe == "lain"){
+            subject = $("#lain_text").val();
+        }
+
+        text = $("#ket").val();
+        from_date = $("#tgl_dari").val();
+        to_date = $("#tgl_sampai").val();
+
+        formData.append('text', text);
+        formData.append('subject', subject);
+        formData.append('from_date', from_date);
+        formData.append('to_date', to_date);
+        formData.append('to_name', to_name);
+
+        uploadFiles(formData);
+    });
+
+    function uploadFiles(formData) {
+        $.ajax({
+            url: '/upload_surat',
+            method: 'post',
+            data: formData,
+            processData: false,
+            contentType: false,
+            xhr: function () {
+                var xhr = new XMLHttpRequest();
+                return xhr;
+            }
+        }).done(handleSuccess).fail(function (xhr, status) {
+            alert(status);
+        });
+    }
+
+    function handleSuccess(data) {
+        var html = '';
+        if (data) {
+            html = 'Sukses';
+            $('#album').html(html);
+            $("#ket").val("");
+            $('#tgl_dari').val("");
+            $('#tgl_sampai').val("");
+        } else {
+            html = 'Gagal';
+        }
+        console.log(data);
+    }
+
+    function check_pwd(){
+        new_ = $('#pwd_new').val();
+        conf = $('#pwd_new_conf').val();
+
+        if(new_.length < 6 || conf.length < 6){
+            $('#not').html("<h6>Password harus lebih dari 6 karakter</h6>");
+        }else{
+            if(new_ != conf){
+                $('#not').html("<h6>Password baru tidak sama</h6>");
+            }
+            else{
+                $.ajax({
+                    type: 'post',
+                    url: '/pwd',
+                    dataType: 'json',
+                    data: {"new":new_},
+                    success: function(res){
+                        if(res == true){
+                            $('#not').html("<h6>Ganti password sukses</h6>");
+                            $('#pwd_new').val("");
+                            $('#pwd_new_conf').val("");
+                        }
+                    },
+                    async: false
+                })
+            }
+        }
+    }
+</script>

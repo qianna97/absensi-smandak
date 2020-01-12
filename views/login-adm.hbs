@@ -1,0 +1,31 @@
+<html lang="en">
+    <head>
+        <title>Masuk - Absensi SMAN 1 CIBADAK</title>
+        <meta name='viewport' content="width=device-width, initial-scale=1.0">
+        <link href="/assets/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+    </head>
+
+    <body style="background-color: #afafaf">
+        <div class="container" style="padding-top: 2%;">
+            <div class="col-sm-5" style="margin: 0 auto;">
+                <div class="card bg-light border-0">
+                    <div class="card-header">
+                        <center><h6>Login Admin</h6></center>
+                    </div>
+                    <div class="card-body">
+                        <form action="/login-adm" method="post">
+                            <div class="form-group">
+                                <input type="text" name="username" id="username" class="form-control" placeholder="ID" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" name="password" id="password" class="form-control" placeholder="Password" required>
+                            </div>
+                            <center><button type="submit" class="btn btn-primary" style="width: 100%;">Login</button></center>
+                        </form><hr>
+                        <center><h7>{{ dialog }}</h7></center>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
