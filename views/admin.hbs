@@ -229,6 +229,31 @@
         });
     }
 
+    function chng_pwd(){
+        pwd = $('#pwd_new').val();
+        conf = $('#pwd_new_conf').val();
+
+        if(pwd != conf){
+            alert("Password tidak cocok");
+        }else{
+            data = {};
+            data.pwd = pwd;
+            $.ajax({
+                url: '/update_pwd',
+                data: data,
+                dataType: 'json',
+                method: 'post',
+                success: function(resp){
+                    if(resp){
+                        $('#pwd_new_conf').val("");
+                        $('#pwd_new').val("");
+                        settings();
+                    }
+                }
+            });
+        }
+    }
+
     function check_filter(){
         html = "";
         html += "<form id='check'>";
@@ -438,7 +463,7 @@
                 html += '<thead><td>Waktu aktif</td>';
                 html += '<td>Waktu non-aktif</td></thead>';
                 html += '<tbody><td><input class="form-control" autocomplete="off" type="text" id="active_time" value="'+ access_time.from_time +'" required></td>';
-                html += '<td><input class="form-control" autocomplete="off" type="text" id="non_time" value="'+ access_time.until_time +'" required></tbody></td>';
+                html += '<td><input class="form-control" autocomplete="off" type="text" id="non_time" value="'+ access_time.until_time +'" disabled></tbody></td>';
                 html += "</table><p></p>";
                 html += '<button type="submit" class="btn btn-primary">Konfirmasi</button>';
                 html += "</form></div></div><br>";
@@ -475,10 +500,9 @@
         html += "<div style='border: 1px solid #ccc;'>";
         html += "<div style='padding-top: 2%; padding-bottom: 2%; padding-left:2%;padding-right:2%'>";
         html += "<h6>Ganti Password<h6><hr>";
-        html += '<input class="form-control" type="password" name="pwd_old" id="pwd_old" placeholder="Password Lama"><p></p>';
-        html += '<input class="form-control" type="password" name="pwd_new" id="pwd_new" placeholder="Password Baru"><p></p>';
-        html += '<input class="form-control" type="password" name="pwd_new_conf" id="pwd_new_conf" placeholder="Password Baru (ulangi)"><p></p>';
-        html += '<button type="button" class="btn btn-primary" onclick="predict()" >Konfirmasi</button>';
+        html += '<input class="form-control" type="password" name="pwd_new" id="pwd_new" placeholder="Password Baru" required><p></p>';
+        html += '<input class="form-control" type="password" name="pwd_new_conf" id="pwd_new_conf" placeholder="Password Baru (ulangi)" required><p></p>';
+        html += '<button type="button" class="btn btn-primary" onclick="chng_pwd()" >Konfirmasi</button>';
         html += "</div></div>";
 
         $('#content-view').html(html);
@@ -510,7 +534,9 @@
                 dataType: 'json',
                 method: 'post',
                 success: function(resp){
-                    settings();
+                    if(resp){
+                        settings();
+                    }
                 }
             });
         });
