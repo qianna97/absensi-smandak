@@ -6,57 +6,98 @@
         <script src="/assets/js/jquery-3.4.1.js" type="text/javascript"></script>
         <script src="/assets/js/bootstrap.bundle.js"></script>
         <script src="/assets/js/bootstrap.js"></script>
-        <script src="/assets/js/dom-to-image.js"></script>
-        <script src="/assets/js/dom-to-pdf.js"></script>
-        <script src="/assets/js/FileSaver.js"></script>
+        <script src="/assets/js/html2canvas.min.js"></script>
+        <script src="/assets/js/jspdf.min.js"></script>
     </head>
     <style>
-        
+        table.table-bordered{
+            border:1px solid black;
+        }
+        table.table-bordered > thead > tr > th{
+            border:1px solid black;
+        }
+        table.table-bordered > tbody > tr > td{
+            border:1px solid black;
+        }
     </style>
-    <body>
-        <div id="all" style="background-color: #ffffff">
-            <div style="text-align: center;padding-top:1%;padding-bottom:1%;">
-                <h6>REKAP ABSENSI</h6>
-                <h6>KELAS X-IPA-1 PERIODE JULI 2019</h6>
-                <h6>SMAN 1 CIBADAK</h6>
+    <body style="font-family: 'Times New Roman';">
+        <!--<a href="#" onclick="print()">Unduh</a>-->
+        <input type="hidden" id="id_kelas" value="{{ id_kelas }}">
+        <input type="hidden" id="month" value="{{ month }}">
+        <input type="hidden" id="year" value="{{ year }}">
+        <div id="all" style="background-color: #ffffff;padding:5%"> 
+            <div style="text-align: center;padding-bottom:3%">
+                <h6 style=";font-weight:bold">REKAP ABSENSI</h6>
+                <h6 style=";font-weight:bold">KELAS {{ id_kelas }}</h6>
+                <h6 style=";font-weight:bold">PERIODE {{ bulan }} {{ year }}</h6>
+                <h6 style=";font-weight:bold">SMAN 1 CIBADAK</h6>
             </div>
-            <div style="margin: 1%;">
-                <table class="table table-bordered">
-                    <tr>
-                        <th>No</th>
-                        <th>Nama</th>
-                        <th>1</th>
-                        <th>1</th>
-                        <th>1</th>
-                        <th>1</th>
-                    </tr>
-                    <tr>
-                        <td>1</td>
-                        <td>Hehe</td>
-                        <td>1</td>
-                        <td>2</td>
-                        <td>3</td>
-                        <td>4</td>
-                    </tr>
-                </table>
+            <div id="content-view">
             </div>
         </div>
-        <a href="#" onclick="print()">dsds</a>
     </body>
 </html>
 <script>
+    var data = {};
+    data.id_kelas = $('#id_kelas').val();
+    data.month = $('#month').val();
+    data.year = $('#year').val();
+    $.ajax({
+        url: '/read_recap',
+        data: data,
+        dataType: 'json',
+        method: 'post',
+        success: function(resp){
+            dayscount = Object.keys(resp[0]).length-2;
+            html = "";
+            html += '<table class="table table-bordered table-sm" style="font-size: small;font-weight:bold">';
+            html += '<thead class="thead-dark"><tr>';
+            html += '<th scope="col" style="text-align: center;">No</th>';
+            html += '<th scope="col">Nama</th>';
+            for(i=1; i<=dayscount; i++){
+                html += '<th scope="col">'+i.toString()+'</th>';
+            }
+            html += '</tr></thead>';
+
+            html += '<tbody>';
+            
+            for(i=0; i<resp.length; i++){
+                html += '<tr>';
+                html += '<td style="text-align: center;white-space:nowrap;width:0.1%">'+(i+1).toString()+'</td>';
+                html += '<td style="white-space:nowrap;width:0.1%">'+resp[i].name+'</td>';
+                for(var key in resp[i]){
+                    value = resp[i][key];
+                    if(value.length == 1){
+                        if(value == 'H'){
+                            html += '<td style="text-align: center;white-space:nowrap;width:0.1%">&#x2713</td>';
+                        }else if(value == 'Z'){
+                            html += '<td style="text-align: center;white-space:nowrap;width:0.1%"></th>';
+                        }else if(value == 'L'){
+                            html += '<td class="bg-danger" style="text-align: center;white-space:nowrap;width:0.1%">-</th>';
+                        }else{
+                            html += '<td style="text-align: center;white-space:nowrap;width:0.1%">'+value+'</th>';
+                        }
+                    }
+                }
+            }
+
+            html += '</tr></tbody></table>';
+            $('#content-view').html(html);
+        },
+        async: false
+    });
+
+
+
     function print(){
-        domtoimage.toBlob(document.getElementById('all')).then(function (blob) {
-            saveAs(blob, 'my-node.png');
+        html2canvas($('#all'), {
+            onrendered: function(canvas) {     
+                var imgData = canvas.toDataURL('image/jpeg');              
+                var doc = new jsPDF('p', 'px', [canvas.width, canvas.height]);
+                
+                doc.addImage(imgData, 'JPEG', 10, 10, doc.internal.pageSize.width, doc.internal.pageSize.height);
+                doc.save('sample-file.pdf');
+            }
         });
     }
-
-    var element = document.getElementById('all');
-    var options = {
-        filename: 'test.pdf'
-    };
-    domToPdf(element, options, function() {
-        console.log('done');
-    });
-    
 </script>

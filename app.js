@@ -388,7 +388,29 @@ async function confirmRequest(id){
 }
 
 app.get('/generate/record/:record/class/:class', function(req, res) {
-    res.render('rekap.hbs');
+    const month = [
+        "None",
+        "JANUARI", 
+        "FEBRUARI", 
+        "MARET", 
+        "APRIL", 
+        "MEI", 
+        "JUNI", 
+        "JULI", 
+        "AGUSTUS", 
+        "SEPTEMBER", 
+        "OKTOBER", 
+        "NOVEMBER", 
+        "DESEMBER"
+    ];
+
+    var c = req.params.record.split("_");
+    res.render('rekap.hbs', {
+        'id_kelas': req.params.class,
+        'month': c[1],
+        'year': c[2],
+        'bulan' : month[parseInt(c[1])]
+    });
 });
 
 app.post('/login', function (req, res ) {
@@ -450,6 +472,10 @@ app.get('/logout',(req, res) => {
         res.redirect('/');
     });
 });
+
+app.get('/coba',(req, res)=> {
+    res.render('coba')
+})
 
 app.post('/pwd', (req, res) => {
     sess = req.session;
@@ -716,6 +742,14 @@ app.post('/read_recap', (req, res) =>{
         res.json(results);
     });
 });
+
+app.get('/read_count_surat',(req, res) => {
+    let sql = "SELECT * FROM surat WHERE confirm=0";
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        res.json(results.length);
+    });
+})
 
 app.post('/read_surat',(req, res) =>{
     var conf = [];

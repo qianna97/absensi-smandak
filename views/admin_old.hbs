@@ -1,0 +1,853 @@
+<html lang="en">
+    <head>
+        <meta name='viewport' content="width=device-width, initial-scale=1.0">
+        <title>Absensi SMAN 1 CIBADAK | Admin</title>
+        <link href="/assets/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+        <script src="/assets/js/jquery-3.4.1.js" type="text/javascript"></script>
+        <script src="/assets/js/bootstrap.bundle.js"></script>
+        <script src="/assets/js/bootstrap.js"></script>
+        <script src="/assets/js/jquery-ui.js" type="text/javascript"></script>
+        <link href="/assets/css/jquery-ui.css" rel="stylesheet" type="text/css"/>
+        <script src="/assets/js/jquery.ui.timepicker.js" type="text/javascript"></script>
+        <link href="/assets/css/jquery.ui.timepicker.css" rel="stylesheet" type="text/css"/>
+    </head>
+    <style type="text/css">
+        .row.fix {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .row > [class*='col-'] {
+            display: flex;
+            flex-direction: column;
+        }
+
+        ul, #myUL {
+            list-style-type: none;
+        }
+
+        #myUL {
+            margin: 0;
+            padding: 0;
+        }
+
+        .caret {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .caret::before {
+            content: "\25BA";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .caret-down::before {
+            transform: rotate(90deg);
+        }
+
+        .nested {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+    </style>
+
+    <body style="background-color: #afafaf">
+        <div class="row" style="padding-top:1%;padding-left:0.5%">
+            <div class="col-sm-3">
+                <div class="card bg-light border-0">
+                    <div class="card-header text-white bg-dark">
+                        <h6>Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <a href="#" onclick="check_filter()">Pengajuan</a>
+                        <hr>
+                        <span>Rekap Absensi</span>
+                        <div id="content-class">
+                        </div>
+                        <hr>
+                        <a href="#" onclick="upload_siswa()">Data Siswa</a><br>
+                        <a href="#" onclick="settings()">Pengaturan</a><br>
+                        <a href="/logout">Keluar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card bg-light border-0">
+                    <div class="card-header text-white bg-dark">
+                        <div id="content-title"></div>
+                    </div>
+                    <div id="check-place" style="padding-top:3%;padding-left:3%;padding-bottom:0%">
+                    </div>
+                    <div id="accordion">
+                    <div class="card-body">
+                    <div id="content-view"></div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <div class="modal fade bd-example-modal-md" id="modal-edit-recap" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Edit Rekap</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <div id="recap-name"></div>
+                    <br>
+                    Z:Kosong | A:Absen | S:Sakit | I:Izin | L:Libur
+                    <br>
+                    <div id="recap-list"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="edit_recap()" >Ubah</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade bd-example-modal-md" id="modal-add-siswa" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <div id="siswa-title"></div>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    Tipe:0 -> Siswa Non-Petugas | Tipe:1 Siswa Petugas | Kelas: Angkatan-Jurusan-Kelas
+                    <p></p>
+                    <input type="hidden" id="type">
+                    <input type="text" class="form-control" placeholder="Nama" id="add-name"><br>
+                    <input type="text" class="form-control" placeholder="Induk" id="add-induk"><br>
+                    <input type="text" class="form-control" placeholder="Kelas (ex. X-IPA-1)" id="add-id_kelas"><br>
+                    <input type="text" class="form-control" placeholder="Pasword" id="add-pwd"><br>
+                    <input type="number" class="form-control" placeholder="Tipe (ex. 1)" id="add-tipe">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="add_siswa()" >Konfirmasi</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</html>
+
+<script>
+    $(document).ready(function() {
+        check_filter();
+        get_class();
+        $('.collapse').collapse();
+    });
+
+    function get_class(){
+        $.ajax({
+            method: 'get',
+            dataType: 'json',
+            url: '/get_class',
+            success: function(data){
+                html = "";
+            
+                var angkatan = data.angkatan;
+                var jurusan = data.jurusan;
+                var kelas = data.kelas;
+                var all = data.all;
+
+                for(i=0; i<angkatan.length; i++){
+                    html += '<ul id="myUL">';
+                    html += '<li>';
+                    html += '<span class="caret">Kelas '+ angkatan[i] +'</span>';
+                    html += '<ul class="nested">';
+                    for(m=0; m<jurusan.length; m++){
+                        html += '<li><span class="caret">'+ jurusan[m] +'</span>'
+                        html += '<ul class="nested">';
+                        for(n=0; n<kelas.length; n++){
+                            st = angkatan[i] + '-' + jurusan[m] + '-' + kelas[n];
+                            if(all.includes(st)){
+                                html += '<li><a href="#" onclick="recap_filter(';
+                                html += "'"+st+"'";
+                                html += ')">'+ st +'</a></li>';
+                            }
+                        }
+                        html += '</ul></li>';
+                    }
+                    html += '</ul></li></ul>';
+                }
+                $('#content-class').html(html);
+
+                var toggler = document.getElementsByClassName("caret");
+
+                for(i=0; i<toggler.length; i++){
+                    toggler[i].addEventListener("click", function(){
+                        this.parentElement.querySelector(".nested").classList.toggle("active");
+                        this.classList.toggle("caret-down");
+                    });
+                }
+            }
+        });
+    }
+
+    const month = [
+        "None",
+        "Januari", 
+        "Februari", 
+        "Maret", 
+        "April", 
+        "Mei", 
+        "Juni", 
+        "Juli", 
+        "Agustus", 
+        "September", 
+        "Oktober", 
+        "November", 
+        "Desember"
+    ];
+    
+    function date_format(s){
+        let arr_s = s.split("/");
+        fix = arr_s[0] + " " + month[parseInt(arr_s[1])] + " " + arr_s[2]; 
+        return fix;
+    }
+
+    function open_img(names){
+        arr = names.split("|");
+        for(i=0; i<arr.length; i++){
+            window.open(location.hostname+":"+location.port+"/uploads/"+arr[i]);
+        }
+    }
+
+    function edit_surat(id, type){
+        var data = {};
+        data.id = id;
+        data.type = type;
+        $.ajax({
+            url: '/update_surat',
+            data: data,
+            method: 'post',
+            success: function(resp){
+                return
+            }
+        });
+        notif();
+    }
+
+    function delete_holiday(id){
+        var data = {};
+        data.id = id;
+        $.ajax({
+            url: '/delete_holiday',
+            data: data,
+            dataType: 'json',
+            method: 'post',
+            success: function(resp){
+                settings();
+            }
+        });
+    }
+
+    function chng_pwd(){
+        pwd = $('#pwd_new').val();
+        conf = $('#pwd_new_conf').val();
+
+        if(pwd != conf){
+            alert("Password tidak cocok");
+        }else{
+            data = {};
+            data.pwd = pwd;
+            $.ajax({
+                url: '/update_pwd',
+                data: data,
+                dataType: 'json',
+                method: 'post',
+                success: function(resp){
+                    if(resp){
+                        $('#pwd_new_conf').val("");
+                        $('#pwd_new').val("");
+                        settings();
+                    }
+                }
+            });
+        }
+    }
+
+    function check_filter(){
+        html = "";
+        html += "<form id='check'>";
+        html += '<input type="checkbox" value=0 id="filter1" checked> Belum Dikonfirmasi &nbsp;&nbsp;&nbsp;&nbsp;';
+        html += '<input type="checkbox" value=1 id="filter2" checked> Terkonfirmasi';
+        html += "</form>";
+
+        $('#check-place').html(html);
+        $('#check-place').css("padding-top","3%");
+        $('#check-place').css("padding-left","3%");
+        $('#check-place').css("padding-bottom","0%");
+        notif();
+
+        $('#check :checkbox').change(function(){
+            var confirm = [];
+            i1 = $('#filter1').prop('checked');
+            i2 = $('#filter2').prop('checked');
+            i3 = $('#filter3').prop('checked');
+            
+            if(i1){
+                confirm.push(0);
+            }
+            if(i2){
+                confirm.push(1);
+            }
+            if(i3){
+                confirm.push(-1);
+            }
+
+            notif(confirm);
+        });
+    }
+
+    function notif(conf = [0,1,-1]){
+        html = "";
+        var data = {};
+        data.confirm = conf.join("|")
+        $.ajax({
+            url: '/read_surat',
+            data: data,
+            dataType: 'json',
+            method: 'post',
+            success: function(resp){
+                data = resp;
+                for(i=0; i<data.length; i++){
+                    if(data[i].confirm == 0 && data[i].to_name != "LAPORAN"){
+                        html += '<div class="card border-success">';
+                        html += '<div class="card-header bg-success" id="heading'+ i +'">';
+                        html += '<button class="btn btn-link text-light" data-toggle="collapse" data-target="#collapse'+ i +'" aria-expanded="true" aria-controls="collapse'+ i +'">Pengirim : '+ data[i].from_name +'</button>';
+                        html += '<i class="text-light" style="float:right;padding-top:1%">'+ data[i].date_submit +'</i></div>';
+                    }else if(data[i].confirm == 1 && data[i].to_name != "LAPORAN"){
+                        html += '<div class="card border-info">';
+                        html += '<div class="card-header bg-info" id="heading'+ i +'">';
+                        html += '<button class="btn btn-link text-light" data-toggle="collapse" data-target="#collapse'+ i +'" aria-expanded="true" aria-controls="collapse'+ i +'">Pengirim : '+ data[i].from_name +'</button>';
+                        html += '<i class="text-light" style="float:right;padding-top:1%">'+ data[i].date_submit +'</i></div>';
+                    }
+                    
+                    if(data[i].to_name == "LAPORAN"){
+                        html += '<div class="card border-danger">';
+                        html += '<div class="card-header bg-danger" id="heading'+ i +'">';
+                        html += '<button class="btn btn-link text-light" data-toggle="collapse" data-target="#collapse'+ i +'" aria-expanded="true" aria-controls="collapse'+ i +'">Pengirim : '+ data[i].from_name +'</button>';
+                        html += '<i class="text-light" style="float:right;padding-top:1%">'+ data[i].date_submit +'</i></div>';
+                    }
+                    html += '<div id="collapse'+ i +'" class="collapse" aria-labelledby="heading'+ i +'" data-parent="#accordion">';
+                    html += '<div style="padding-bottom:6%" class="card-body">';
+                    html += '<h6 class="card-title">'+ data[i].to_name +' : '+ data[i].subject +'</h6>';
+                    if(data[i].to_name != "LAPORAN"){
+                        html += '<span class="card-text">Mulai tanggal '+ date_format(data[i].from_date) + " sd. " + date_format(data[i].to_date) +'</span><br>';
+                    }
+                    html += '<span class="card-text">' + data[i].text + '</span><br>';
+                    if(data[i].to_name != "LAPORAN"){
+                        html += '<button type="button" class="btn btn-primary" style="float:right;margin:2px;" onclick=edit_surat("'+ data[i].id +'",1)>Konfirmasi</button>';
+                        html += '<button type="button" class="btn btn-success" style="float:right;margin:2px;" onclick=open_img("'+ data[i].image +'")>Lihat Surat</button>';
+                    }
+                    html += '</div></div></div><br>';
+                }
+
+                $('#content-view').html(html);
+                $('#content-title').html("<h6>Pengajuan</h6>");
+            }
+        });
+    }
+
+    function recap_filter(id_class){
+        $('#content-view').html("");
+        
+        $.ajax({
+            url: '/get_periode',
+            dataType: 'json',
+            method: 'get',
+            success: function(resp){
+                var periode = [];
+                for(i=0; i<resp.length; i++){
+                    let ar = resp[i]["Tables_in_absensi_db (%record%)"].split('_');
+                    let inx = parseInt(ar[1]);
+                    periode.push(month[inx] + " " + ar[2]);
+                }
+                html = "";
+
+                html += '<table><tr>';
+                html += '<td>';
+                html += '<div class="dropdown">';
+                html += '<button class="btn btn-success dropdown-toggle" type="button" id="dropDownBulan" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Bulan</button> &nbsp';
+                html += '<div class="dropdown-menu" aria-labelledby="dropDownBulan">';
+                
+                for(i=0; i<periode.length; i++){
+                    html += '<a class="dropdown-item" href="#">'+periode[i]+'</a>';
+                }
+                html += '</div></div>';
+                html += '</td>';
+                html += '</tr></table>';
+
+                $('#check-place').html(html);
+                $('#check-place').css("padding-top","3%");
+                $('#check-place').css("padding-left","3%");
+                $('#check-place').css("padding-bottom","0%");
+                $('#content-view').html("");
+                $('#content-title').html("<h6>Rekap Absensi "+ id_class +"</h6>");
+
+                $(".dropdown-menu a").click(function(){
+                    var name_item = $(this).text().split(" ");
+                    $('.dropdown-toggle').text(name_item[0]);
+                    var index = month.indexOf(name_item[0]);
+                    recap(index, parseInt(name_item[1]), id_class);
+                });
+            }
+        });
+    }
+
+    function edit_recap(){
+        var data = {};
+        var induk = $('#my_induk').val();
+        var rec = $('#my_record').val();
+        data.induk = induk;
+        data.rec = rec;
+        
+        days = {};
+        var ele = document.querySelectorAll(".classDay");
+        for(i=0; i<ele.length; i++){
+            n = "day"+(i+1).toString();
+            days[n] = ele[i].value;
+        }
+        data.day = days;
+        $.ajax({
+            url: "/edit_user_recap",
+            method: "post",
+            data: data,
+            dataType: 'json',
+            success: function(res){
+                if(res == true){
+                    $('#modal-edit-recap').modal('toggle');
+                    alert("Sukses");
+                }
+            }
+        })
+    }
+
+    function modal_edit_recap(name, m, year){
+        $('#modal-edit-recap').modal('toggle');
+        $('#recap-name').html(name+" | "+month[m]+" "+year);
+
+        $.ajax({
+            method: 'post',
+            data: {name, m, year},
+            url: "/get_user_recap",
+            dataType: 'json',
+            success: function(res){
+                html = "";
+                html += '<input type="hidden" id="my_induk" value="'+res[0]["induk"]+'">';
+                html += '<input type="hidden" id="my_record" value="record_'+m+'_'+year+'">';
+                html += "<table class='table table-bordered'>";
+                html += "<tr><th>Tanggal</th><th>Kehadiran</th></tr>";
+                for(i=0; i<(Object.keys(res[0]).length)-1; i++){
+                    html += '<tr>';
+                    html += '<td><center>'+(i+1).toString()+"</center></td>";
+                    html += '<td><input class="classDay" id="day'+ (i+1).toString() +'" value="'+ res[0]['day'+(i+1).toString()] +'"';
+                    html += '</tr>';
+                }
+                html += "</table>";
+                $('#recap-list').html(html);
+            }
+        })
+    }
+
+    function recap(month, year, id_kelas){
+        html = '';
+        var data = {};
+        data.id_kelas = id_kelas;
+        data.month = month;
+        data.year = year;
+        $.ajax({
+            url: '/read_recap',
+            data: data,
+            dataType: 'json',
+            method: 'post',
+            success: function(resp){
+                dayscount = Object.keys(resp[0]).length-2;
+                html += '<a href="/generate/record/record_'+month+'_'+year+'/class/'+id_kelas+'">Buka Full</a><br>'
+                html += '<table class="table table-bordered" style="overflow-x: auto; display:block">';
+                html += '<thead class="thead-dark"><tr>';
+                html += '<th scope="col" style="width:5%">No</th>';
+                html += '<th scope="col">Nama</th>';
+                for(i=1; i<=dayscount; i++){
+                    html += '<th scope="col" style="width:5%">'+i.toString()+'</th>';
+                }
+                html += '<th>Aksi</th>'
+                html += '</tr></thead>';
+
+                html += '<tbody>';
+                
+                for(i=0; i<resp.length; i++){
+                    html += '<tr>';
+                    html += '<td>'+(i+1).toString()+'</td>';
+                    html += '<td>'+resp[i].name+'</td>';
+                    for(var key in resp[i]){
+                        value = resp[i][key];
+                        if(value.length == 1){
+                            if(value == 'H'){
+                                html += '<td>&#x2713</td>';
+                            }else if(value == 'Z'){
+                                html += '<td> </th>';
+                            }else{
+                                html += '<td>'+value+'</th>';
+                            }
+                        }
+                    }
+                    html += '<td><button type="button" class="btn btn-warning btn-sm" onclick="modal_edit_recap(';
+                    html += "'"+resp[i].name+"','"+ month + "','" + year + "')";
+                    html += '"href="#">E</button></td></tr>';
+                }
+
+                html += '</tbody></table>';
+            },
+            async: false
+        });
+
+        $('#content-view').html(html);
+    }
+
+    function settings(){
+        $('#check-place').html("");
+        $('#check-place').css("padding","0%");
+        html = "";
+        
+        var holiday_date = {};
+        var access_time = {};
+
+        $.ajax({
+            url: '/read_access_time',
+            data: {},
+            dataType: 'json',
+            method: 'post',
+            success: function(resp){
+                access_time = resp[0];
+                html += "<div style='border: 1px solid #ccc;'>";
+                html += "<div style='padding-top: 2%; padding-bottom: 2%; padding-left:2%;padding-right:2%'>";
+                html += "<h6>Akses Interval Waktu (00-24)<h6><hr>";
+                html += '<form id="edit_time">'
+                html += "<table>";
+                html += '<thead><td>Waktu aktif</td>';
+                html += '<td>Waktu non-aktif</td></thead>';
+                html += '<tbody><td><input class="form-control" autocomplete="off" type="text" id="active_time" value="'+ access_time.from_time +'" required></td>';
+                html += '<td><input class="form-control" autocomplete="off" type="text" id="non_time" value="'+ access_time.until_time +'" disabled></tbody></td>';
+                html += "</table><p></p>";
+                html += '<button type="submit" class="btn btn-primary">Konfirmasi</button>';
+                html += "</form></div></div><br>";
+            },
+            async: false
+        });
+
+        $.ajax({
+            url: '/read_holiday',
+            data: {},
+            dataType: 'json',
+            method: 'post',
+            success: function(resp){
+                holiday_date = resp;
+                html += "<div style='border: 1px solid #ccc;'>";
+                html += "<div style='padding-top: 2%; padding-bottom: 2%; padding-left:2%;padding-right:2%'>";
+                html += "<h6>Hari Libur<h6><hr>";
+                html += "<form id='add_holi'>"
+                html += "<table>";
+                html += '<td><input class="form-control" type="text" id="tgl_libur" autocomplete="off" placeholder="Pilih Tanggal" required></td>';
+                html += '<td><button type="submit" class="btn btn-primary">Tambah</button></td></table></form>';
+                html += '<table class="table" style="max-height: 200px;overflow:auto;display: inline-block;">';
+                html += '<tbody>';
+                for(i=0; i<holiday_date.length; i++){
+                    html += '<tr><td>'+ date_format(holiday_date[i].tgl) +'</td>';
+                    html += '<td><button type="button" class="btn btn-danger" onclick="delete_holiday('+ holiday_date[i].id +')" >Hapus</button></td>';
+                    html += '</tr>';
+                }
+                html += "</tbody></table></div></div><br>";
+            },
+            async: false
+        });
+
+        html += "<div style='border: 1px solid #ccc;'>";
+        html += "<div style='padding-top: 2%; padding-bottom: 2%; padding-left:2%;padding-right:2%'>";
+        html += "<h6>Ganti Password<h6><hr>";
+        html += '<input class="form-control" type="password" name="pwd_new" id="pwd_new" placeholder="Password Baru" required><p></p>';
+        html += '<input class="form-control" type="password" name="pwd_new_conf" id="pwd_new_conf" placeholder="Password Baru (ulangi)" required><p></p>';
+        html += '<button type="button" class="btn btn-primary" onclick="chng_pwd()" >Konfirmasi</button>';
+        html += "</div></div>";
+
+        $('#content-view').html(html);
+        $('#content-title').html("<h6>Pengaturan</h6>");
+
+        var dateToday = new Date();
+        $('#tgl_libur').datepicker({
+            dateFormat: 'dd/mm/yy',
+            beforeShowDay: function(day) {
+                var day = day.getDay();
+                if (day == 0) {
+                    return [false, "somecssclass"]
+                } else {
+                    return [true, "someothercssclass"]
+                }
+            },
+            minDate: dateToday
+        });
+        $('#active_time').timepicker();
+        $('#non_time').timepicker();
+
+        $('#add_holi').on('submit', function (event){
+            tgl = $('#tgl_libur').val();
+            data = {};
+            data.tgl = tgl;
+            $.ajax({
+                url: '/create_holiday',
+                data: data,
+                dataType: 'json',
+                method: 'post',
+                success: function(resp){
+                    if(resp){
+                        settings();
+                    }
+                }
+            });
+        });
+
+        $('#edit_time').on('submit', function (event){
+            from_time = $('#active_time').val();
+            until_time = $('#non_time').val();
+            data = {};
+            data.from_time = from_time;
+            data.until_time = until_time;
+            $.ajax({
+                url: '/update_access_time',
+                data: data,
+                dataType: 'json',
+                method: 'post',
+                success: function(resp){
+                    settings();
+                }
+            });
+        });
+    }
+
+    function add_siswa(){
+        if($("#type").val() == 1){
+            name = $("#add-name").val();
+            induk = $("#add-induk").val();
+            id_kelas = $("#add-id_kelas").val();
+            pwd = $("#add-pwd").val();
+            tipe = $("#add-tipe").val();
+
+            data = {};
+            data.name = name;
+            data.induk = induk;
+            data.id_kelas = id_kelas;
+            data.pwd = pwd;
+            data.tipe = tipe;
+            $.ajax({
+                method: 'post',
+                url: '/add_siswa',
+                data: data,
+                dataType: 'json',
+                success: function(res){
+                    if(res){
+                        $("#add-name").val("");
+                        $("#add-induk").val("");
+                        $("#add-id_kelas").val("");
+                        $("#add-pwd").val("");
+                        $("#add-tipe").val("");
+                        $('#modal-add-siswa').modal('toggle');
+                        alert("Sukses");
+                        siswa();
+                    }else{
+                        alert("Gagal");
+                    }
+                }
+            });
+        }else if($("#type").val() == 2){
+            name = $("#add-name").val();
+            induk = $("#add-induk").val();
+            id_kelas = $("#add-id_kelas").val();
+            pwd = $("#add-pwd").val();
+            tipe = $("#add-tipe").val();
+
+            data = {};
+            data.name = name;
+            data.induk = induk;
+            data.id_kelas = id_kelas;
+            data.pwd = pwd;
+            data.tipe = tipe;
+            $.ajax({
+                method: 'post',
+                url: '/edit_siswa',
+                data: data,
+                dataType: 'json',
+                success: function(res){
+                    if(res){
+                        $("#add-name").val("");
+                        $("#add-induk").val("");
+                        $("#add-id_kelas").val("");
+                        $("#add-pwd").val("");
+                        $("#add-tipe").val("");
+                        $('#modal-add-siswa').modal('toggle');
+                        alert("Sukses");
+                        siswa();
+                    }else{
+                        alert("Gagal");
+                    }
+                }
+            });
+        }
+        
+    }
+
+    function delete_siswa(induk){
+        var ret = confirm("Apakah anda yakin akan menghapus ?");
+        if(ret){
+            $.ajax({
+                method: 'post',
+                url: '/delete_siswa',
+                data: {induk},
+                dataType: 'json',
+                success: function(res){
+                    if(res){
+                        alert("Sukses");
+                        siswa();
+                    }else{
+                        alert("Gagal");
+                    }
+                }
+            });
+        }
+    }
+
+    function modal_add_siswa(){
+        $('#modal-add-siswa').modal('toggle');
+        $('#siswa-title').html("<h6>Tambah Siswa</h6>");
+        $('#type').val(1);
+    }
+
+    function modal_edit_siswa(induk){
+        $.ajax({
+            method: 'post',
+            url: '/get_siswa_by_induk',
+            data: {induk},
+            dataType: 'json',
+            success: function(res){
+                $('#modal-add-siswa').modal('toggle');
+                $('#siswa-title').html("<h6>Edit Siswa</h6>");
+                $('#type').val(2);
+                $("#add-name").val(res.name);
+                $("#add-induk").val(res.induk);
+                $("#add-id_kelas").val(res.id_kelas);
+                $("#add-pwd").val(res.pwd);
+                $("#add-tipe").val(res.tipe);
+                $("#add-induk").attr("disabled", true);
+            }
+        })
+    }
+
+    function upload_siswa(){
+        html = "";
+
+        html += '<form id="upload-siswa" method="post" action="/upload_siswa" enctype="multipart/form-data">';
+        html += '<input id="datas-input" type="file" name="datas[]" multiple="multiple"><p></p>';
+        html += '<input class="btn btn-success" type="submit" name="Ajukan Uploads" value="Unggah"/>&nbsp;&nbsp;';
+        html += '<input class="btn btn-secondary" type="button" name="Ajukan Uploads" value="?"/></form><hr>';
+        html += '<button class="btn btn-primary" onclick="modal_add_siswa()">Tambah</button>';
+
+        $('#check-place').html(html);
+        $('#check-place').css("padding-top","3%");
+        $('#check-place').css("padding-left","3%");
+        $('#check-place').css("padding-bottom","0%");
+
+        siswa();
+
+        $('#upload-siswa').on('submit', function (event) {
+            event.preventDefault();
+
+            var files = $('#datas-input').get(0).files,
+                formData = new FormData();
+
+            if (files.length > 1) {
+                alert('Upload maksimal 1 file');
+                return false;
+            }
+
+            for (var i=0; i < files.length; i++) {
+                var file = files[i];
+                formData.append('datas[]', file, file.name);
+            }
+
+            uploadFiles(formData);
+        });
+        
+    }
+
+    function uploadFiles(formData) {
+        $.ajax({
+            url: '/upload_siswa',
+            method: 'post',
+            data: formData,
+            processData: false,
+            contentType: false,
+            xhr: function () {
+                var xhr = new XMLHttpRequest();
+                return xhr;
+            }
+        }).done(handleSuccess).fail(function (xhr, status) {
+            alert(status);
+        });
+    }
+
+    function handleSuccess(data) {
+        siswa();
+        get_class();
+    }
+
+    function siswa(){
+        $.ajax({
+            method: 'get',
+            dataType: 'json',
+            url: '/read_siswa',
+            success: function(data){
+                html = "";
+                html += '<table class="table">';
+                html += '<thead class="thead-dark">';
+                html += '<tr><th scope="col">No</th><th scope="col">Induk</th><th scope="col">Nama</th><th scope="col">Kelas</th><th scope="col">Password</th><th scope="col">Status</th><th scope="col">Aksi</th></tr></thead>';
+                html += '<tbody>';
+                for(i=0; i<data.length; i++){
+                    html += '<tr><th scope="row">'+data[i].id+'</th>';
+                    html += '<th>'+data[i].induk+'</th>';
+                    html += '<th>'+data[i].name+'</th>';
+                    html += '<th>'+data[i].id_kelas+'</th>';
+                    html += '<th>'+data[i].pwd+'</th>';
+                    if(data[i].tipe == 0){
+                        html += '<th>Siswa</th>';    
+                    }else{
+                        html += '<th>Petugas</th>';
+                    }
+                    html += '<th><button type="button" class="btn btn-warning btn-sm" onclick="modal_edit_siswa(';
+                    html += "'"+ data[i].induk +"')";
+                    html += '">E</button>&nbsp<button type="button" class="btn btn-danger btn-sm" onclick="delete_siswa(';
+                    html += "'"+ data[i].induk +"')";
+                    html += '">H</button></th></tr>';
+                    
+                }
+                html += '</tbody></table>';
+                
+                $('#content-view').html(html);
+                $('#content-title').html("<h6>Data Siswa</h6>");
+            }
+        });
+    }
+
+</script>
