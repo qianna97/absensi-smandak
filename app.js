@@ -10,6 +10,7 @@ const fileType = require('file-type');
 const mysql = require('mysql');
 const dateformat = require('dateformat');
 const schedule = require('node-schedule');
+const moment = require('moment');
 const md5 = require('md5');
 const app = express();
 
@@ -41,6 +42,40 @@ var closeSchedule = schedule.scheduleJob('0 30 10 * * *', function(){
 });
 
 checkRecord();
+
+function exportPDF(data){
+    const fs = require('fs');
+    const PDFDocument = require('./pdfkit-tables');
+    const doc = new PDFDocument();
+
+    doc.pipe(fs.createWriteStream('./pdf/example.pdf'));
+
+    const table0 = {
+        headers: ['Word', 'Comment', 'Summary'],
+        rows: [
+            ['Apple', 'Not this one', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla viverra at ligula gravida ultrices. Fusce vitae pulvinar magna.'],
+            ['Tire', 'Smells like funny', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla viverra at ligula gravida ultrices. Fusce vitae pulvinar magna.']
+        ]
+    };
+
+    doc.table(table0, {
+        prepareHeader: () => doc.font('Helvetica-Bold'),
+        prepareRow: (row, i) => doc.font('Helvetica').fontSize(12)
+    });
+
+    const table1 = {
+        headers: ['Country', 'Conversion rate', 'Trend'],
+        rows: [
+            ['Switzerland', '12%', '+1.12%'],
+            ['France', '67%', '-0.98%'],
+            ['England', '33%', '+4.44%']
+        ]
+    };
+
+    doc.moveDown().table(table1, 100, 350, { width: 300 });
+
+    doc.end();
+}
 
 function daysInMonth(month, year){
     return new Date(month, year, 0).getDate();
@@ -245,9 +280,116 @@ function getAbsen(induk, periode){
     });
 }
 
-async function confirmRequest(id){
-    return false;
+function getSuratbyId(id){
+    return new Promise(resolve => {
+        let sql = "SELECT * FROM surat WHERE id="+id;
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
 }
+
+function getDates(startDate, stopDate) {
+    var dateArray = [];
+    var currentDate = moment(startDate, 'DD/MM/YYYY');
+    var stopDate = moment(stopDate, 'DD/MM/YYYY');
+    while (currentDate.isSameOrBefore(stopDate)) {
+        dateArray.push( moment(currentDate, 'DD/MM/YYYY').format('DD/MM/YYYY') )
+        currentDate = moment(currentDate, 'DD/MM/YYYY').add(1, 'days');
+    }
+    return dateArray;
+}
+
+function getUserbyName(name){
+    return new Promise(resolve => {
+        let sql = "SELECT * FROM user WHERE name='"+name+"'";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
+}
+
+function checkRecordName(month, year){
+    return new Promise(resolve => {
+        let sql = "SHOW TABLES LIKE 'record_"+month+"_"+year+"'";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            if(results.length > 0){
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        });
+    });
+}
+
+function isDayHoliday(day, month, year){
+    return new Promise(resolve => {
+        let sql = "SELECT day"+ day +" FROM record_"+month+"_"+year+" LIMIT 1";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            if(results[0]['day'+day] == "L"){
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        });
+    });
+}
+
+async function confirmRequest(id){
+    surat = await getSuratbyId(id);
+    name  = surat[0].to_name;
+    user = await getUserbyName(name);
+    induk = user[0].induk;
+    subject = surat[0].subject;
+    if(subject == "SAKIT"){
+        subject = "S";
+    }else{
+        subject = "I";
+    }
+    from_date = surat[0].from_date;
+    to_date = surat[0].to_date;
+    dates = getDates(from_date, to_date);
+    
+    for(i=0; i<dates.length; i++){
+        d = dates[i].split("/");
+        month = "";
+        day = "";
+        year = d[2];
+
+        if(d[1][0] == "0"){
+            month = d[1][1];
+        }else{
+            month = d[1];
+        }
+
+        if(d[0][0] == "0"){
+            day = d[0][1];
+        }else{
+            day = d[0];
+        }
+
+        check = await checkRecordName(month, year);
+
+        if(check){
+            holicheck = await isDayHoliday(day, month, year);
+            if(holicheck == false){
+                rec = "record_"+month+"_"+year;
+                let sql = "UPDATE "+rec+" SET day"+day+"='"+subject+"' WHERE induk="+induk;
+                let query = conn.query(sql, (err, results) => {
+                    if(err) throw err;
+                });
+            }
+        }
+    }
+}
+
+app.get('/generate/record/:record/class/:class', function(req, res) {
+    res.render('rekap.hbs');
+});
 
 app.post('/login', function (req, res ) {
     sess = req.session;
@@ -443,6 +585,82 @@ app.get('/admin',(req, res) => {
     }else{
         res.render('login-adm');
     }
+});
+
+app.post('/add_siswa', function(req, res){
+    induk = req.body.induk;
+
+    let sql = "SELECT * FROM user WHERE induk='"+induk+"'";
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        if(results.length > 0){
+            res.status(200).json(false);    
+        }else{
+            let sql2 = "INSERT INTO user SET ?";
+            let query2 = conn.query(sql2, req.body,(err, results) => {
+                if(err) throw err;
+                res.status(200).json(true);   
+            });
+        }
+    });
+});
+
+app.post('/edit_siswa', function(req, res){
+    let sql = "UPDATE user SET ? WHERE induk='"+req.body.induk+"'";
+    let query = conn.query(sql, req.body,(err, results) => {
+        if(err) throw err;
+        res.status(200).json(true);   
+    });
+});
+
+app.post('/delete_siswa', function(req, res){
+    let sql = "DELETE FROM user WHERE induk='"+req.body.induk+"'";
+    let query = conn.query(sql, req.body,(err, results) => {
+        if(err) throw err;
+        res.status(200).json(true);   
+    });
+});
+
+app.post('/get_siswa_by_induk', (req, res)=>{
+    let sql = "SELECT * FROM user WHERE induk='"+req.body.induk+"'";
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        res.json(results[0]);
+    });
+});
+
+app.post('/edit_user_recap', (req,res) => {
+    induk = req.body.induk;
+    rec = req.body.rec;
+    console.log(req.body);
+
+    n = "";
+    for(i=0; i<(Object.keys(req.body).length)-2; i++){
+        n += "day"+(i+1).toString()+"='"+req.body["day[day"+(i+1).toString()+"]"]+"'";
+        if(i != (Object.keys(req.body).length)-3){
+            n+= ",";
+        }
+    }
+
+    let sql = "UPDATE "+rec+" SET "+n+" WHERE induk="+induk;
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        res.status(200).json(true);
+    });
+});
+
+app.post('/get_user_recap', async function(req, res) {
+    name = req.body.name;
+    month = req.body.m;
+    year = req.body.year;
+    user = await getUserbyName(name);
+    induk = user[0].induk;
+
+    let sql = "SELECT * FROM record_"+month+"_"+year+" WHERE induk="+induk;
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        res.json(results);
+    });
 });
 
 app.get('/get_periode', (req, res) => {
