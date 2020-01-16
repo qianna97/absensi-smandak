@@ -123,8 +123,8 @@ function createRecord(rec, y, m){
             full_date += " day"+i.toString()+" varchar(1) DEFAULT 'Z')";
         }
     }
-    let sql = "CREATE TABLE "+ rec + " (induk varchar(20) UNIQUE,"+full_date;
-    let query = conn.query(sql, (err, results) => {
+    let sql4 = "CREATE TABLE "+ rec + " (induk varchar(20) PRIMARY KEY,"+full_date;
+    let query = conn.query(sql4, (err, results) => {
         if(err) throw err;
     });
 
@@ -164,6 +164,9 @@ function checkRecord(){
         var i = results.length;
         if(i == 0){
             console.log('Create Table Record');
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = (date.getMonth())+1;
             createRecord(rec, year, month);
         }else{
             console.log('Record table for this month is already created');
@@ -465,11 +468,18 @@ app.post('/login-adm', (req, res )=> {
 });
 
 app.get('/logout',(req, res) => {
+    sess = req.session;
+    page = '';
+    if(sess.adm){
+        page = '/admin';
+    }else{
+        page = '/'; 
+    }
     req.session.destroy((err) => {
         if(err) {
             return console.log(err);
         }
-        res.redirect('/');
+        res.redirect(page);
     });
 });
 
@@ -618,14 +628,45 @@ app.post('/add_siswa', function(req, res){
 
     let sql = "SELECT * FROM user WHERE induk='"+induk+"'";
     let query = conn.query(sql, (err, results) => {
-        if(err) throw err;
+        if(err) {
+            res.status(200).json(false);  
+        }
         if(results.length > 0){
             res.status(200).json(false);    
         }else{
             let sql2 = "INSERT INTO user SET ?";
             let query2 = conn.query(sql2, req.body,(err, results) => {
-                if(err) throw err;
-                res.status(200).json(true);   
+                if(err){
+                    res.status(200).json(false);  
+                };
+                rec = getRecordName();
+                var date = new Date();
+                var year = date.getFullYear();
+                var month = (date.getMonth())+1;
+                let count = daysInMonth(year, month);
+
+                let sql3 = "INSERT INTO "+ rec +" (induk) VALUES ('"+induk+"')";
+                let query3 = conn.query(sql3, (err, results) => {
+                    if(err){
+                        res.status(200).json(false);
+                    };
+                    var week = getWeekend(count);
+                    var q = "";
+                    for(i=0; i<week.length; i++){
+                        if(i != week.length-1){
+                            q += " day"+week[i].toString()+" ='L',";
+                        }else{
+                            q += " day"+week[i].toString()+" ='L'";
+                        }
+                    }
+                    let sql4 = "UPDATE "+ rec +" SET"+q +" WHERE induk="+induk;
+                    let query4 = conn.query(sql4, (err, results) => {
+                        if(err){
+                            res.status(200).json(false);  
+                        };
+                        res.status(200).json(true);
+                    });
+                });
             });
         }
     });
@@ -643,7 +684,12 @@ app.post('/delete_siswa', function(req, res){
     let sql = "DELETE FROM user WHERE induk='"+req.body.induk+"'";
     let query = conn.query(sql, req.body,(err, results) => {
         if(err) throw err;
-        res.status(200).json(true);   
+        rec = getRecordName();
+        let sql2 = "DELETE FROM "+rec+" WHERE induk='"+req.body.induk+"'";
+        let query2 = conn.query(sql2, req.body,(err, results) => {
+            if(err) throw err;
+            res.status(200).json(true);  
+        }) 
     });
 });
 
@@ -658,7 +704,6 @@ app.post('/get_siswa_by_induk', (req, res)=>{
 app.post('/edit_user_recap', (req,res) => {
     induk = req.body.induk;
     rec = req.body.rec;
-    console.log(req.body);
 
     n = "";
     for(i=0; i<(Object.keys(req.body).length)-2; i++){
@@ -811,17 +856,32 @@ app.post('/read_holiday',async function(req, res) {
 });
 
 app.post('/delete_holiday',(req, res) => {
-    let sql = "DELETE FROM holiday WHERE id="+req.body.id+"";
-    let query = conn.query(sql, (err, results) => {
+    let sql2 = "SELECT * FROM holiday WHERE id="+req.body.id;
+    let query2 = conn.query(sql2, (err, results) => {
         if(err) throw err;
-        res.status(200).json(true);
+        res_ = results[0].tgl.split("/");
+        tgl = parseInt(res_[0]);
+        month = parseInt(res_[1]);
+        year = parseInt(res_[2]);
+
+        rec = "record_"+month.toString()+"_"+year.toString();
+
+        let sql3 = "UPDATE "+rec+" SET day"+tgl+"='Z'";
+        let query3 = conn.query(sql3, (err, results) => {
+            if(err) throw err;
+            let sql = "DELETE FROM holiday WHERE id="+req.body.id+"";
+            let query = conn.query(sql, (err, results) => {
+                if(err) throw err;
+                res.status(200).json(true);
+            });
+        });
+
     });
 });
 
 app.post('/update_pwd',(req, res) => {
     sess = req.session;
     let sql = "UPDATE admin SET pwd='"+md5(req.body.pwd)+"' WHERE id="+sess.id_;
-    console.log(sql);
     let query = conn.query(sql, (err, results) => {
       if(err) throw err;
       res.json(results);
@@ -1022,6 +1082,60 @@ app.post('/change_pwd',(req, res) => {
         if(err) throw err;
         res.json(results);
     });
+});
+
+function getAttend(d,m,y){
+    return new Promise(resolve => {
+        let sql = "SELECT day"+d.toString()+" FROM record_"+m.toString()+"_"+y;
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            tmpH = 0;
+            tmpI = 0;
+            tmpS = 0;
+            tmpA = 0;
+            for(i=0; i<results.length; i++){
+                for(var key in results[i]){
+                    value = results[i][key];
+                    if(value.length == 1){
+                        if(value == 'H'){
+                            tmpH += 1;
+                        }else if(value == 'A'){
+                            tmpA += 1;
+                        }else if(value == 'I'){
+                            tmpI += 1;
+                        }else if(value == 'S'){
+                            tmpS += 1;
+                        }
+                    }
+                }
+            }
+            resolve([tmpH, tmpS, tmpI, tmpA]);
+        });
+    });
+}
+
+app.get('/get_dashboard', async function(req,res){
+    date = new Date();
+    d = parseInt(date.getDate());
+    m = date.getMonth()+1;
+    y = date.getFullYear();
+
+    time = []
+    x = []
+    for(i=1; i<=d; i++){
+        time.push(i);
+    }
+    
+    for(const i of time){
+        const value = await getAttend(i,m,y);
+        x.push(value);
+    }
+    
+    //value = await getAttend(d,m,y);
+    data = {};
+    data.y = time;
+    data.x = x;
+    res.json(data);
 });
 
 app.listen(8000, () => {

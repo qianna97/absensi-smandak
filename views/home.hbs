@@ -206,6 +206,7 @@
 
     $('#tgl_dari').datepicker({
         dateFormat: 'dd/mm/yy',
+        stepMonths: 0,
         beforeShowDay: function(day) {
             var day = day.getDay();
             if (day == 0) {
@@ -218,6 +219,7 @@
     });
     $('#tgl_sampai').datepicker({
         dateFormat: 'dd/mm/yy',
+        stepMonths: 0,
         beforeShowDay: function(day) {
             var day = day.getDay();
             if (day == 0) {

@@ -3,15 +3,17 @@
         <meta name='viewport' content="width=device-width, initial-scale=1.0">
         <title>Admin - Absensi SMAN 1 CIBADAK</title>
         <link href="/assets/css/bootstrap.css" rel="stylesheet" type="text/css"/>
-        <script src="/assets/js/jquery-3.4.1.js" type="text/javascript"></script>
+        <script src="/assets/js/chart.js"></script>
+        <link href="/assets/css/chart.css" rel="stylesheet" type="text/css"/>
+        <script src="/assets/js/jquery-3.4.1.js"></script>
         <link href="/assets/css/all.css" rel="stylesheet" type="text/css"/>
-        <script src="/assets/js/jquery-3.4.1.js" type="text/javascript"></script>
         <script src="/assets/js/bootstrap.bundle.js"></script>
         <script src="/assets/js/bootstrap.js"></script>
         <script src="/assets/js/jquery-ui.js" type="text/javascript"></script>
         <link href="/assets/css/jquery-ui.css" rel="stylesheet" type="text/css"/>
         <script src="/assets/js/jquery.ui.timepicker.js" type="text/javascript"></script>
         <link href="/assets/css/jquery.ui.timepicker.css" rel="stylesheet" type="text/css"/>
+        <script src="/assets/js/utils.js"></script>
     </head>
     <style>
         #body-row {
@@ -100,7 +102,7 @@
                     <li class="list-group-item sidebar-separator-title text-muted d-flex align-items-center menu-collapsed">
                         <small>MENU UTAMA</small>
                     </li>
-                    <a href="#" class="bg-dark list-group-item list-group-item-action">
+                    <a href="#" onclick="dashboard()" class="bg-dark list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-start align-items-center">
                             <span class="fa fa-tachometer-alt fa-fw mr-3"></span>
                             <span class="menu-collapsed">Dashboard</span>    
@@ -302,7 +304,7 @@
     }
 
     $(document).ready(function() {
-        check_filter();
+        dashboard();
         get_class();
         count_surat();
         $('.collapse').collapse();
@@ -361,6 +363,7 @@
             dataType: 'json',
             method: 'post',
             success: function(resp){
+                html = "";
                 data = resp;
                 for(i=0; i<data.length; i++){
                     if(data[i].confirm == 0 && data[i].to_name != "LAPORAN"){
@@ -604,6 +607,7 @@
             method: 'post',
             success: function(resp){
                 dayscount = Object.keys(resp[0]).length-2;
+                html = "";
                 html += '<a href="/generate/record/record_'+month+'_'+year+'/class/'+id_kelas+'"><span class="fa fa-print fa-fw mr-3"></span>Cetak</a><p></p>'
                 html += '<table class="table table-bordered" style="display:block; overflow-x: auto; max-width:1000px">';
                 html += '<thead class="thead-dark"><tr>';
@@ -719,6 +723,7 @@
         var dateToday = new Date();
         $('#tgl_libur').datepicker({
             dateFormat: 'dd/mm/yy',
+            stepMonths: 0,
             beforeShowDay: function(day) {
                 var day = day.getDay();
                 if (day == 0) {
@@ -979,5 +984,144 @@
         });
     }
 
+
+    function dashboard(){
+        html = "";
+        tmpH = 0;
+        tmpI = 0;
+        tmpS = 0;
+        tmpA = 0;
+        var time;
+        var temp_1;
+        $.ajax({
+            method: 'get',
+            url: '/get_dashboard',
+            success: function(res){
+                tmpH = res['x'][res['x'].length-1][0];
+                tmpI = res['x'][res['x'].length-1][1];
+                tmpS = res['x'][res['x'].length-1][2];
+                tmpA = res['x'][res['x'].length-1][3];
+
+                time = res['y'];
+                temp_1 = [];
+                temp_2 = [];
+                temp_3 = [];
+                temp_4 = [];
+
+                for(i=0; i<res['x'].length; i++){
+                    temp_1.push(res['x'][i][0]);
+                    temp_2.push(res['x'][i][1]);
+                    temp_3.push(res['x'][i][2]);
+                    temp_4.push(res['x'][i][3]);
+                }
+            },
+            async: false
+        })
+        html += '<div class="col">';
+            html += '<h5>Hari ini</h5>';
+            html += '<div class="card-deck">';
+                html += '<div class="card bg-primary text-light" style="text-align: center">'
+                    html += '<div class="card-body bg-primary">';
+                        html += '<h1>'+tmpH+'</h1>';
+                    html += '</div>'
+                    html += '<div class="card-body bg-primary">';
+                        html += '<h5>Hadir</h5>'
+                    html += '</div>';
+                html += '</div>';
+                html += '<div class="card bg-success text-light"  style="text-align: center">'
+                    html += '<div class="card-body bg-success">';
+                        html += '<h1>'+tmpS+'</h1>';
+                    html += '</div>'
+                    html += '<div class="card-body bg-success">';
+                        html += '<h5>Sakit</h5>'
+                    html += '</div>';
+                html += '</div>';
+                html += '<div class="card bg-secondary text-light" style="text-align: center">'
+                    html += '<div class="card-body bg-secondary">';
+                        html += '<h1>'+tmpI+'</h1>';
+                    html += '</div>'
+                    html += '<div class="card-body bg-secondary">';
+                        html += '<h5>Izin</h5>'
+                    html += '</div>';
+                html += '</div>';
+                html += '<div class="card bg-danger text-light" style="text-align: center">'
+                    html += '<div class="card-body bg-danger">';
+                        html += '<h1>'+tmpA+'</h1>';
+                    html += '</div>'
+                    html += '<div class="card-body bg-danger">';
+                        html += '<h5>Absen</h5>'
+                    html += '</div>';
+                html += '</div>';
+            html += '</div>';
+        html += '</div>';
+        html += '<br>';
+        html += '<hr>';
+        html += '<div class="col">';
+            html += '<h5>Bulan ini</h5>';
+            html += '<div style="width:100%;"><canvas id="canvas"></canvas></div>';
+        html += '</div>';
+
+        $('#content-view').html(html);
+        $('#check-place').html("");
+        $('#check-place').css("padding","0%");
+        $('#content-title').html("<h1>Dashboard</h1>");
+
+        var ctx_1 = document.getElementById("canvas");
+
+        var myChart_1 = new Chart(ctx_1, {
+        type: 'line',
+        data: {
+            labels: time,
+            datasets: [
+            { 
+                data: temp_1,
+                label: "Hadir",
+                borderColor: "#0275d8",
+                fill: false
+            },
+            { 
+                data: temp_2,
+                label: "Sakit",
+                borderColor: "#5cb85c",
+                fill: false
+            },
+            { 
+                data: temp_3,
+                label: "Izin",
+                borderColor: "#5bc0de",
+                fill: false
+            },
+            { 
+                data: temp_4,
+                label: "Absen",
+                borderColor: "#d9534f",
+                fill: false
+            },
+            ]
+        },
+        options: {
+				responsive: true,
+				scales: {
+					xAxes: [{
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'Tanggal'
+						}
+					}],
+					yAxes: [{
+                        ticks:{
+                            stepSize:1
+                        },
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: 'Siswa'
+						}
+					}]
+				}
+			}
+        });
+    }
 
 </script>
