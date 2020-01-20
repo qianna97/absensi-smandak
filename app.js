@@ -43,40 +43,6 @@ var closeSchedule = schedule.scheduleJob('0 30 10 * * *', function(){
 
 checkRecord();
 
-function exportPDF(data){
-    const fs = require('fs');
-    const PDFDocument = require('./pdfkit-tables');
-    const doc = new PDFDocument();
-
-    doc.pipe(fs.createWriteStream('./pdf/example.pdf'));
-
-    const table0 = {
-        headers: ['Word', 'Comment', 'Summary'],
-        rows: [
-            ['Apple', 'Not this one', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla viverra at ligula gravida ultrices. Fusce vitae pulvinar magna.'],
-            ['Tire', 'Smells like funny', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla viverra at ligula gravida ultrices. Fusce vitae pulvinar magna.']
-        ]
-    };
-
-    doc.table(table0, {
-        prepareHeader: () => doc.font('Helvetica-Bold'),
-        prepareRow: (row, i) => doc.font('Helvetica').fontSize(12)
-    });
-
-    const table1 = {
-        headers: ['Country', 'Conversion rate', 'Trend'],
-        rows: [
-            ['Switzerland', '12%', '+1.12%'],
-            ['France', '67%', '-0.98%'],
-            ['England', '33%', '+4.44%']
-        ]
-    };
-
-    doc.moveDown().table(table1, 100, 350, { width: 300 });
-
-    doc.end();
-}
-
 function daysInMonth(month, year){
     return new Date(month, year, 0).getDate();
 }
@@ -95,14 +61,6 @@ function getWeekend(getTot){
 }
 
 function closeAttendSchedule(){
-    /**
-    acc = await getAccessTime();
-    temp = acc[0].until_time.split(":");
-    until_time = [];
-    hour = temp[0];
-    minute = temp[1];
-    return [minute, hour];
-     */
     date = new Date();
     rec = getRecordName();
 
@@ -390,6 +348,16 @@ async function confirmRequest(id){
     }
 }
 
+function getRecapClass(rec, id_kelas){
+    return new Promise(resolve => {
+        let sql = "SELECT user.name, "+ rec +".* FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+id_kelas+"'";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
+}
+
 app.get('/generate/record/:record/class/:class', function(req, res) {
     const month = [
         "None",
@@ -413,6 +381,12 @@ app.get('/generate/record/:record/class/:class', function(req, res) {
         'month': c[1],
         'year': c[2],
         'bulan' : month[parseInt(c[1])]
+    });
+});
+
+app.get('/generate/recordall/class/:class', function(req, res) {
+    res.render('rekap_all.hbs', {
+        'id_kelas': req.params.class
     });
 });
 
@@ -483,10 +457,6 @@ app.get('/logout',(req, res) => {
     });
 });
 
-app.get('/coba',(req, res)=> {
-    res.render('coba')
-})
-
 app.post('/pwd', (req, res) => {
     sess = req.session;
   
@@ -508,12 +478,6 @@ app.get('/get_status', async function (req, res) {
     
     for(i=0; i<periode.length; i++){
         var resp = await getAbsen(sess.induk, periode[i]["Tables_in_absensi_db (%record%)"]);
-        // Z default
-        // L libur
-        // A absen
-        // I izin
-        // S Sakit
-        // H hadir
         for(var key in resp[0]){
             value = resp[0][key];
             if(value.length == 1){
@@ -787,6 +751,46 @@ app.post('/read_recap', (req, res) =>{
         res.json(results);
     });
 });
+
+app.post('/read_all_recap', async function(req, res) {
+    var kelas = req.body.id_kelas;
+    var periode = await getPeriode();
+    var all = [];
+    for(const rec of periode){ //get semua periode
+        month_data = await getRecapClass(rec['Tables_in_absensi_db (%record%)'], kelas); //get bulan perkelas
+        month = [];
+        for(i=0; i<month_data.length; i++){ //get per siswa
+            siswa = month_data[i];
+            data = {};
+            tmpH = 0;
+            tmpA = 0;
+            tmpI = 0;
+            tmpS = 0;
+            for(var key in siswa){ // data siswa
+                value = siswa[key];
+                if(value.length == 1){
+                    if(value == 'H'){
+                        tmpH += 1;
+                    }else if(value == 'A'){
+                        tmpA += 1;
+                    }else if(value == 'I'){
+                        tmpI += 1;
+                    }else if(value == 'S'){
+                        tmpS += 1;
+                    }
+                }
+            }
+            data.name = siswa.name;
+            data.h = tmpH;
+            data.a = tmpA;
+            data.i = tmpI;
+            data.s = tmpS;
+            month.push(data);
+        }
+        all.push(month);
+    }
+    res.json(all);
+})
 
 app.get('/read_count_surat',(req, res) => {
     let sql = "SELECT * FROM surat WHERE confirm=0";
@@ -1131,11 +1135,180 @@ app.get('/get_dashboard', async function(req,res){
         x.push(value);
     }
     
-    //value = await getAttend(d,m,y);
     data = {};
     data.y = time;
     data.x = x;
     res.json(data);
+});
+
+app.get('/get_clock', (req, res) => {
+    d = Date();
+    res.json(d);
+})
+
+function getPreviewAcc(code){
+    return new Promise(resolve => {
+        let sql = "SELECT * FROM preview WHERE code='"+code+"'";
+
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            if(results.length > 0){
+                resolve(true);
+            }else{
+                resolve(false);
+            }
+        });
+    });    
+}
+
+app.post('/login-preview', async function(req,res){
+    sess = req.session;
+    code = req.body.code_access;
+
+    islogin = await getPreviewAcc(code);
+    if(islogin){
+        sess.preview = true;
+    }
+    res.redirect('/preview');
+});
+
+function getRecapClassDaily(id_kelas){
+    return new Promise(resolve => {
+        rec = getRecordName();
+        d = new Date();
+        let sql = "SELECT "+ rec +".day"+ d.getDate() +" FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+id_kelas+"'";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
+}
+
+function getListClass(){
+    return new Promise(resolve => {
+        let sql = "SELECT nama_kelas FROM class";
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            
+            ret = []
+            for(i=0; i<results.length; i++){
+                ret.push(results[i]['nama_kelas'])
+            }
+            resolve(ret);
+        });
+    });
+}
+
+async function getPreviewTable(){
+    list_class = await getListClass();
+
+    x = [];
+    xi = [];
+    xii = [];
+
+    for(var kelas of list_class){
+        val = kelas.split("-");
+        angkatan = val[0];
+        if(angkatan == 'X'){
+            tmp = await getRecapClassDaily(kelas);
+            h = 0;
+            i = 0;
+            s = 0;
+            a = 0;
+            d = new Date();
+            
+            for(m=0; m<tmp.length; m++){
+                if(tmp[m]['day'+d.getDate().toString()] == 'H'){
+                    h++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'S'){
+                    s++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'I'){
+                    i++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'A'){
+                    a++;
+                }
+            }
+            x.push({
+                'kelas' : kelas,
+                'h' : h,
+                's' : s,
+                'i' : i,
+                'a' : a
+            });
+        }else if(angkatan == 'XI'){
+            tmp = await getRecapClassDaily(kelas);
+            h = 0;
+            i = 0;
+            s = 0;
+            a = 0;
+            d = new Date();
+            
+            for(m=0; m<tmp.length; m++){
+                if(tmp[m]['day'+d.getDate().toString()] == 'H'){
+                    h++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'S'){
+                    s++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'I'){
+                    i++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'A'){
+                    a++;
+                }
+            }
+            xi.push({
+                'kelas' : kelas,
+                'h' : h,
+                's' : s,
+                'i' : i,
+                'a' : a
+            });
+        }else if(angkatan == 'XII'){
+            tmp = await getRecapClassDaily(kelas);
+            h = 0;
+            i = 0;
+            s = 0;
+            a = 0;
+            d = new Date();
+            
+            for(m=0; m<tmp.length; m++){
+                if(tmp[m]['day'+d.getDate().toString()] == 'H'){
+                    h++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'S'){
+                    s++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'I'){
+                    i++;
+                }else if(tmp[m]['day'+d.getDate().toString()] == 'A'){
+                    a++;
+                }
+            }
+            xii.push({
+                'kelas' : kelas,
+                'h' : h,
+                's' : s,
+                'i' : i,
+                'a' : a
+            });
+        }
+    }
+    data = [];
+    data.push(x);
+    data.push(xi);
+    data.push(xii);
+
+    return data;
+}
+
+app.get('/get_preview_table', async function(req, res){
+    data = await getPreviewTable()
+    res.json(data);
+})
+
+app.get('/preview', async function(req, res){
+    sess = req.session;
+    if(sess.preview){
+        res.render('preview')
+    }else{
+        res.render('login-preview')
+    }
 });
 
 app.listen(8000, () => {

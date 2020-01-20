@@ -87,6 +87,8 @@
             <span class="fa fa-toolbox mr-3"></span>
             <span class="menu-collapsed">Sistem Admin Absensi SMANDAK</span>
         </a>
+        <div id="clock" style="float: right;">
+        </div>
         </nav>
 
         <div class="row" id="body-row">
@@ -234,7 +236,23 @@
 
 <script>
     $('#body-row .collapse').collapse('hide'); 
-    $('#collapse-icon').addClass('fa-angle-double-left'); 
+    $('#collapse-icon').addClass('fa-angle-double-left');
+
+    function clk(){
+        $.ajax({
+            method: 'get',
+            url: '/get_clock',
+            success: function(res){
+                $("#clock").html('<i class="text-light" style="float: right;">'+res+'</i>');
+            }
+        })
+    }
+
+    setInterval(function(){
+        clk();
+    }, 10000);
+
+    clk();
 
     $('[data-toggle=sidebar-colapse]').click(function() {
         SidebarCollapse();
@@ -643,11 +661,62 @@
                     html += "'"+resp[i].name+"','"+ month + "','" + year + "')";
                     html += '"href="#"><span class="fa fa-edit"></span></button></td></tr>';
                 }
-
                 html += '</tbody></table>';
             },
             async: false
         });
+
+        $.ajax({
+            method: 'post',
+            url: '/read_all_recap',
+            data: {'id_kelas':id_kelas},
+            success: function(res){
+                month_count = res.length;
+                html += '<hr>';
+                html += '<h5>Kalkulasi Semua Periode/Bulan</h5>';
+                html += '<a href="/generate/recordall/class/'+id_kelas+'"><span class="fa fa-print fa-fw mr-3"></span>Cetak</a><p></p>'
+                html += '<table class="table table-bordered" style="display:block; overflow-x: auto; max-width:1000px">';
+                html += '<thead class="thead-dark"><tr>';
+                html += '<th scope="col" style="width:5%" rowspan="2">No</th>';
+                html += '<th scope="col" rowspan="2" style="text-align: center;">Nama</th>';
+                for(i=1; i<=month_count; i++){
+                    html += '<th scope="col" colspan="4" style="text-align: center;">'+i+'</th>';
+                }
+                html += '</tr>';
+                html += '<tr>';
+                for(i=1; i<=month_count; i++){
+                    html += '<th scope="col" style="text-align: center;">H</th>';
+                    html += '<th scope="col" style="text-align: center;">S</th>';
+                    html += '<th scope="col" style="text-align: center;">I</th>';
+                    html += '<th scope="col" style="text-align: center;">A</th>';
+                }
+                html += '</tr>';
+
+                html += '<tbody>';
+
+                name_ = [];
+
+                for(i=0; i<res[0].length; i++){
+                    name_.push(res[0][i].name);
+                }
+                
+                for(c=0; c<name_.length;c++){
+                    html += '<tr>';
+                    html += '<td style="border-right:1px solid #d9534f; border-left:1px solid #d9534f;border-bottom:1px solid #d9534f">'+(c+1)+'</td>';
+                    html += '<td style="border-right:1px solid #d9534f;border-bottom:1px solid #d9534f">'+name_[c]+'</td>';
+                    for(i=0; i<month_count; i++){
+                        html += '<td style="text-align: center;border-bottom:1px solid #d9534f">'+res[i][c].h+'</td>';
+                        html += '<td style="text-align: center;border-bottom:1px solid #d9534f">'+res[i][c].s+'</td>';
+                        html += '<td style="text-align: center;border-bottom:1px solid #d9534f">'+res[i][c].i+'</td>';
+                        html += '<td style="text-align: center;border-right:1px solid #d9534f;border-bottom:1px solid #d9534f">'+res[i][c].a+'</td>';
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody>';
+                html += '</table>';
+            },
+            async: false
+        })
 
         $('#content-view').html(html);
     }
@@ -993,6 +1062,9 @@
         tmpA = 0;
         var time;
         var temp_1;
+        var temp_2;
+        var temp_3;
+        var temp_4;
         $.ajax({
             method: 'get',
             url: '/get_dashboard',
@@ -1110,9 +1182,6 @@
 						}
 					}],
 					yAxes: [{
-                        ticks:{
-                            stepSize:1
-                        },
 						display: true,
 						scaleLabel: {
 							display: true,

@@ -30,13 +30,16 @@
                 <div class="card bg-light border-0">
                     <div class="card-header text-white bg-dark">
                         <h6>Dashboard</h6>
+                        <div id="clock">
+                        </div>
                     </div>
                     <div class="card-body">
                         {{#if access }}
                             {{#if attend }}
                                 <center><h6>Anda sudah melakukan konfirmasi kehadiran</h6></center>
                             {{else}}
-                                <button type="button" class="btn btn-primary btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-konfirm" id="conf-button" href="#">Konfirmasi Kehadiran</button>
+                                <button type="button" class="btn btn-primary btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-konfirm" id="conf-button" href="#">Konfirmasi Kehadiran</button><p></p>
+                                <button type="submit" class="btn btn-success btn-lg text-light" style="width: 100%;" data-toggle="modal" data-target="#modal-izin" href="#">Ajukan Surat Izin</button>
                             {{/if}}
                             <hr>
                         {{else}}
@@ -44,7 +47,6 @@
                         {{/if}}
                         {{#if permission}}
                             <hr>
-                            <button type="submit" class="btn btn-success btn-lg text-light" style="width: 100%;" data-toggle="modal" data-target="#modal-izin" href="#">Ajukan Surat Izin</button><p></p>
                             <button type="submit" class="btn btn-danger btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-lapor" href="#">Ajukan Pelaporan</button>
                         {{/if}}
                     </div>
@@ -113,16 +115,6 @@
                 </div>
                 <div class="modal-body" style="padding:15px 50px;">
                     <form id="upload-surat" method="post" action="/upload_surat" enctype="multipart/form-data">
-                        <div class="dropdown">
-                            <button class="btn btn-success dropdown-toggle" type="button" id="dropDownNama" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Nama
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropDownNama" style="max-height: 200px;overflow:auto;">
-                                <div id="list-classmate">
-                                </div>
-                            </div>
-                        </div><p></p>
-
                         <span id="rbutton">
                             <input type="radio" name="tipe" id="tipe" value="SAKIT"> Sakit<br>
                             <input type="radio" name="tipe" id="tipe" value="IZIN"> Izin<br>
@@ -180,6 +172,22 @@
 </html>
 <script>
     var dateToday = new Date();
+
+    function clk(){
+        $.ajax({
+            method: 'get',
+            url: '/get_clock',
+            success: function(res){
+                $("#clock").html('<i class="text-light">'+res+'</i>');
+            }
+        })
+    }
+
+    setInterval(function(){
+        clk();
+    }, 10000);
+
+    clk();
 
     $.ajax({
         method: 'get',
@@ -287,9 +295,6 @@
                         }
                     }
                     html += '<tr><td>'+res[i].name+'</td><td>'+s+'</td></tr>';
-                    if($('#my-name').val() != res[i].name){
-                        html2 += '<a class="dropdown-item" href="#">'+res[i].name+'</a>';
-                    }
                 }
                 html += '</table><hr>';
                 html += '<h6>Total</h6>';
@@ -301,30 +306,9 @@
                 html += '</table>';
 
                 $('#classmate-view').html(html);
-                $('#list-classmate').html(html2);
-
-                $(".dropdown-menu a").click(function(){
-                    name_item = $(this).text();
-                    $('.dropdown-toggle').text(name_item);
-                    to_name = name_item;
-                })
             }
 
         })
-    }
-
-    function cutName(name){
-        var n = name.split(" ");
-        var res = "";
-        res += n[0];
-        if(n.length > 2){
-            for(i=1; i<n.length; i++){
-                res += + " " +n[i][0]+ ". ";
-            }
-        }else{
-            res += name;
-        }
-        return res;
     }
 
     $("#rbutton input[type=radio]").each(function(i){
@@ -411,7 +395,7 @@
         formData.append('subject', subject);
         formData.append('from_date', from_date);
         formData.append('to_date', to_date);
-        formData.append('to_name', to_name);
+        formData.append('to_name', $('#my-name').val());
 
         uploadFiles(formData);
     });
