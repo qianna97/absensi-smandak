@@ -12,7 +12,11 @@
     </head>
 
     <style>
-
+        td a {
+            display: block;
+            width: 100%;
+            color: white;
+        }
     </style>
     
     <body>
@@ -39,6 +43,9 @@
             </div>
             <div class="col">
                 <!--<center><img class="card-img-top" src="/assets/img/logo.png" style="width: 120px; height: 120px;"></center>-->
+                <div style="float: right;">
+                    <a href="#" onclick="getData()"><span class="fa fa-sync"></span>Refresh</a>
+                </div>
                 <div class="row">
                     <div id="clock-date" class="text-primary">
                     </div>
@@ -107,6 +114,21 @@
             </div>
         </div>
     </body>
+    <div class="modal fade bd-example-modal-md" id="modal-list" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <div id="title-list">
+                    </div>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <div id="table-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </html>
 
 <script>
@@ -138,16 +160,23 @@
     
     setInterval(function(){
         getData();
-    }, 10000);
+    }, 2700000);
+
+    setInterval(function(){
+        getClock();
+    }, 60000);
 
     getData();
+    getClock();
 
-    function getData(){
+    function getClock(){
         n = new Date();
         d = "<h5>"+days[parseInt(n.getDay())] + ", " + n.getDate() + " " + months[parseInt(n.getMonth()+1)] +" " +n.getFullYear()+"</h5>";
         d += '<h1 style="font-size:xxx-large;">'+("0" + n.getHours()).slice(-2) +" : "+ ("0" +n.getMinutes()).slice(-2)+'</h1>';
         $('#clock-date').html(d);
+    }
 
+    function getData(){
         htmlToday = "";
         tmpH = 0;
         tmpI = 0;
@@ -163,8 +192,8 @@
             url: '/get_dashboard',
             success: function(res){
                 tmpH = res['x'][res['x'].length-1][0];
-                tmpI = res['x'][res['x'].length-1][1];
-                tmpS = res['x'][res['x'].length-1][2];
+                tmpS = res['x'][res['x'].length-1][1];
+                tmpI = res['x'][res['x'].length-1][2];
                 tmpA = res['x'][res['x'].length-1][3];
 
                 time = res['y'];
@@ -350,11 +379,11 @@
                 htmlX += '<tbody>';
                 for(l=0; l<x.length; l++){
                     htmlX += '<tr>';
-                    htmlX += '<td>'+x[l].kelas+'</td>';
-                    htmlX += '<td>'+x[l].h+'</td>';
-                    htmlX += '<td>'+x[l].s+'</td>';
-                    htmlX += '<td>'+x[l].i+'</td>';
-                    htmlX += '<td>'+x[l].a+'</td>';
+                    htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","none")>'+x[l].kelas+'</a></td>';
+                    htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","H")>'+x[l].h+'</a></td>';
+                    htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","S")>'+x[l].s+'</a></td>';
+                    htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","I")>'+x[l].i+'</a></td>';
+                    htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","A")>'+x[l].a+'</a></td>';
                     htmlX += '</tr>';
                 }
                 htmlX +='</tbody></table>';
@@ -364,11 +393,11 @@
                 htmlXI += '<tbody>';
                 for(l=0; l<xi.length; l++){
                     htmlXI += '<tr>';
-                    htmlXI += '<td>'+xi[l].kelas+'</td>';
-                    htmlXI += '<td>'+xi[l].h+'</td>';
-                    htmlXI += '<td>'+xi[l].s+'</td>';
-                    htmlXI += '<td>'+xi[l].i+'</td>';
-                    htmlXI += '<td>'+xi[l].a+'</td>';
+                    htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","none")>'+xi[l].kelas+'</a></td>';
+                    htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","H")>'+xi[l].h+'</a></td>';
+                    htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","S")>'+xi[l].s+'</a></td>';
+                    htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","I")>'+xi[l].i+'</a></td>';
+                    htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","A")>'+xi[l].a+'</a></td>';
                     htmlXI += '</tr>';
                 }
                 htmlXI +='</tbody></table>';
@@ -378,11 +407,11 @@
                 htmlXII += '<tbody>';
                 for(l=0; l<xii.length; l++){
                     htmlXII += '<tr>';
-                    htmlXII += '<td>'+xii[l].kelas+'</td>';
-                    htmlXII += '<td>'+xii[l].h+'</td>';
-                    htmlXII += '<td>'+xii[l].s+'</td>';
-                    htmlXII += '<td>'+xii[l].i+'</td>';
-                    htmlXII += '<td>'+xii[l].a+'</td>';
+                    htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","none")>'+xii[l].kelas+'</a></td>';
+                    htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","H")>'+xii[l].h+'</a></td>';
+                    htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","S")>'+xii[l].s+'</a></td>';
+                    htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","I")>'+xii[l].i+'</a></td>';
+                    htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","A")>'+xii[l].a+'</a></td>';
                     htmlXII += '</tr>';
                 }
                 htmlXII +='</tbody></table>';
@@ -393,5 +422,43 @@
         $('#x-table').html(htmlX);
         $('#xi-table').html(htmlXI);
         $('#xii-table').html(htmlXII);
+    }
+
+    function modalList(id_kelas, filter){
+        html = "";
+
+        $.ajax({
+            method: 'post',
+            data: {"id_kelas":id_kelas, "filter":filter},
+            url: '/get_preview_table_info',
+            success: function(res){
+                html += '<table class="table table-md table-striped">';
+                for(i=0; i<res.length; i++){
+                    html += '<tr>';
+                    html += '<td>'+res[i]['name']+'</td>';
+                    if(filter == 'none'){
+                        html += '<td>'+res[i]['presensi']+'</td>';
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+            },
+            async: false
+        });
+
+        t = "";
+        if(filter == "A"){
+            t = "Absen";
+        }else if(filter == "S"){
+            t = "Sakit";
+        }else if(filter == "I"){
+            t = "Izin";
+        }else if(filter == "H"){
+            t = "Hadir";
+        }
+
+        $('#title-list').html("<h3>Siswa "+t+" "+id_kelas+"<h3>");
+        $('#table-list').html(html);
+        $('#modal-list').modal('toggle');
     }
 </script>

@@ -39,15 +39,18 @@
                                 <center><h6>Anda sudah melakukan konfirmasi kehadiran</h6></center>
                             {{else}}
                                 <button type="button" class="btn btn-primary btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-konfirm" id="conf-button" href="#">Konfirmasi Kehadiran</button><p></p>
-                                <button type="submit" class="btn btn-success btn-lg text-light" style="width: 100%;" data-toggle="modal" data-target="#modal-izin" href="#">Ajukan Surat Izin</button>
+                                <!--<button type="submit" class="btn btn-success btn-lg text-light" style="width: 100%;" data-toggle="modal" data-target="#modal-izin" href="#">Ajukan Surat Izin</button> -->
+                                <p></p>
+                            {{/if}}
+                            {{#if permission}}
+                                <button type="button" class="btn btn-secondary btn-lg" style="width: 100%;" onclick="modalAttendClass()" href="#">Absen Kelas</button>
                             {{/if}}
                             <hr>
                         {{else}}
                             <center><h6>Waktu untuk melakukan konfirmasi kehadiran tidak berlaku</h6></center>
                         {{/if}}
                         {{#if permission}}
-                            <hr>
-                            <button type="submit" class="btn btn-danger btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-lapor" href="#">Ajukan Pelaporan</button>
+                            <button type="button" class="btn btn-danger btn-lg" style="width: 100%;" data-toggle="modal" data-target="#modal-lapor" href="#">Ajukan Pelaporan</button>
                         {{/if}}
                     </div>
                 </div>
@@ -80,6 +83,27 @@
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                         </div>
                     <div id="not"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade bd-example-modal-md" id="modal-attend" role="dialog">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="padding:15px 50px;">
+                    <h6><span class="fa fa-info"></span> Konfirmasi Kehadiran Kelas</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding:15px 50px;">
+                    <form action="/set_attend_class" method="post">
+                    <div id="table-attend-class">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Konfirmasi</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -245,6 +269,59 @@
     var from_date;
     var to_date;
 
+    function modalAttendClass(){
+        html = "";
+        $.ajax({
+            method: 'get',
+            url: '/get_classmate',
+            success: function(res){
+                html += '<table class="table table-md table-striped">';
+                html += '<tbody>';
+                d = new Date();
+                day = d.getDate().toString();
+                for(i=0;i<res.length;i++){
+                    if(res[i].name != $('#my-name').val()){
+                        html += '<tr>';
+                        html += '<td>'+res[i].name+'</td>';
+                        html += '<td><select name="'+res[i].induk+'" id="'+res[i].induk+'">';
+                        value = res[i]['day'+day];
+                        if(value == 'H'){
+                            html += '<option value="H" selected>Hadir</option>';
+                            html += '<option value="I" >Izin</option>';
+                            html += '<option value="S" >Sakit</option>';
+                            html += '<option value="Z" >Kosong</option>';
+                        }else if(value == 'I'){
+                            html += '<option value="H" >Hadir</option>';
+                            html += '<option value="I" selected>Izin</option>';
+                            html += '<option value="S" >Sakit</option>';
+                            html += '<option value="Z" >Kosong</option>';
+                        }else if(value == 'S'){
+                            html += '<option value="H" >Hadir</option>';
+                            html += '<option value="I" >Izin</option>';
+                            html += '<option value="S" selected>Sakit</option>';
+                            html += '<option value="Z" >Kosong</option>';
+                        }else if(value == 'Z'){
+                            html += '<option value="H" >Hadir</option>';
+                            html += '<option value="I" >Izin</option>';
+                            html += '<option value="S" >Sakit</option>';
+                            html += '<option value="Z" selected>Kosong</option>';
+                        }
+                        html += '</select>';
+                        html += '</td></tr>';   
+                    }
+                }
+                html += '</tbody></table>';
+            },
+            async: false
+        })
+        $('#table-attend-class').html(html);
+        $('#modal-attend').modal('toggle');
+    }
+
+    function confirm_class(){
+
+    }
+
     function confirm(){
         $.ajax({
             method: 'get',
@@ -344,7 +421,6 @@
             processData: false,
             contentType: false,
             success: function(resp){
-                console.log(resp);
                 $('#album2').html("Sukses");
                 $('#perihal').val("");
                 $('#keterangan').val("");
@@ -427,7 +503,6 @@
         } else {
             html = 'Gagal';
         }
-        console.log(data);
     }
 
     function check_pwd(){

@@ -36,9 +36,8 @@ conn.connect((err) =>{
     console.log('Mysql Connected...');
 });
 
-var closeSchedule = schedule.scheduleJob('0 30 10 * * *', function(){
-    console.log('Absensi ditutup, set ketidak hadiran');
-    closeAttendSchedule();
+var checkrecordSchedule = schedule.scheduleJob('0 0 0 1 * *', function(){
+    checkRecord();
 });
 
 checkRecord();
@@ -511,7 +510,7 @@ app.get('/get_classmate', async function(req, res){
     var month = (date.getMonth())+1;
     rec = 'record_'+month.toString()+'_'+year.toString();
 
-    let sql = "SELECT user.name, "+ rec +".day"+date.getDate()+" FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+sess.id_kelas+"'";
+    let sql = "SELECT user.name, user.induk, "+ rec +".day"+date.getDate()+" FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+sess.id_kelas+"'";
     let query = conn.query(sql, (err, results) => {
         if(err) throw err;
         res.json(results);
@@ -1184,6 +1183,23 @@ function getRecapClassDaily(id_kelas){
     });
 }
 
+function getRecapClassDailyFilter(id_kelas,filter){
+    return new Promise(resolve => {
+        rec = getRecordName();
+        d = new Date();
+        var sql ="";
+        if(filter == 'none'){
+            sql = "SELECT "+ rec +".day"+ d.getDate() +",user.name FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+id_kelas+"'";
+        }else{
+            sql = "SELECT "+ rec +".day"+ d.getDate() +",user.name FROM user INNER JOIN "+rec+" ON user.induk="+rec+".induk WHERE user.id_kelas='"+id_kelas+"' AND "+ rec +".day"+ d.getDate() +"='"+filter+"'";
+        }
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
+}
+
 function getListClass(){
     return new Promise(resolve => {
         let sql = "SELECT nama_kelas FROM class";
@@ -1310,6 +1326,82 @@ app.get('/preview', async function(req, res){
         res.render('login-preview')
     }
 });
+
+app.post('/get_preview_table_info', async function(req, res){
+    id_kelas = req.body.id_kelas;
+    filter = req.body.filter;
+
+    ret = [];
+    data = await getRecapClassDailyFilter(id_kelas, filter);
+    d = new Date();
+    
+    for(i=0; i<data.length; i++){
+        if(filter == 'none'){
+            presensi = "";
+            if(data[i]['day'+d.getDate().toString()] == 'A'){
+                presensi = "Absen";
+            }else if(data[i]['day'+d.getDate().toString()] == 'I'){
+                presensi = "Izin";
+            }else if(data[i]['day'+d.getDate().toString()] == 'S'){
+                presensi = "Sakit";
+            }else if(data[i]['day'+d.getDate().toString()] == 'H'){
+                presensi = "Hadir";
+            }
+            ret.push({
+                "name": data[i]['name'],
+                "presensi" : presensi
+            });
+        }else{
+            ret.push({
+                "name": data[i]['name']
+            });
+        }
+        
+    }
+    res.json(ret);
+});
+
+app.get('/close_attend', async function(req, res){
+    var d = new Date();
+    until_time = ("0" + d.getHours()).slice(-2).toString()+":"+("0" + d.getMinutes()).slice(-2).toString();
+    let sql = "UPDATE time SET until_time='"+until_time+"' WHERE id=1";
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        closeAttendSchedule();
+        res.status(200).json(true);
+    });
+
+})
+
+function setAttend(induk, rec, day, val){
+    return new Promise(resolve => {
+        let sql = "UPDATE "+rec+" SET day"+day+"='"+val+"' WHERE induk="+induk;
+        let query = conn.query(sql, (err, results) => {
+            if(err) throw err;
+            resolve(results);
+        });
+    });
+}
+
+app.post('/set_attend_class', async function(req, res){
+    data = req.body;
+    induk = [];
+    value = [];
+    indek = [];
+    i = 0;
+    rec = getRecordName();
+    d = new Date();
+    for(var key in data){
+        value.push(data[key]);
+        induk.push(key);
+        indek.push(i);
+        i++
+    }
+    for(const x of indek){
+        await setAttend(induk[x], rec, d.getDate(), value[x]);
+    }
+    res.redirect('/');
+})
 
 app.listen(8000, () => {
     console.log('Server is running at port 8000');
