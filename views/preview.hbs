@@ -97,21 +97,25 @@
             </div>
         </div>
         <hr>
-        <div class="row">
-            <div class="col">
-                <canvas id="canvas-hadir"></canvas>
-            </div>
-            <div class="col">
-                <canvas id="canvas-sakit"></canvas>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col">
-                <canvas id="canvas-izin"></canvas>
-            </div>
-            <div class="col">
-                <canvas id="canvas-absen"></canvas>
-            </div>
+        <div >
+            <table class="table table-lg" style="table-layout: fixed ;width: 100% ;">
+            <tr>
+                <td style="width: 50%">
+                    <canvas id="canvas-hadir"></canvas>
+                </td>
+                <td style="width: 50%">
+                    <canvas id="canvas-sakit"></canvas>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <canvas id="canvas-izin"></canvas>
+                </td>
+                <td>
+                    <canvas id="canvas-absen"></canvas>
+                </td>
+            </tr>
+            </table>
         </div>
     </body>
     <div class="modal fade bd-example-modal-md" id="modal-list" role="dialog">
@@ -187,6 +191,7 @@
         var temp_2;
         var temp_3;
         var temp_4;
+        len = 0;
         $.ajax({
             method: 'get',
             url: '/get_dashboard',
@@ -195,7 +200,6 @@
                 tmpS = res['x'][res['x'].length-1][1];
                 tmpI = res['x'][res['x'].length-1][2];
                 tmpA = res['x'][res['x'].length-1][3];
-
                 time = res['y'];
                 temp_1 = [];
                 temp_2 = [];
@@ -211,11 +215,12 @@
             },
             async: false
         });
-
+        len = tmpS+tmpI+tmpH+tmpA
         htmlToday += '<table class="table table-striped table-lg bg-primary text-light"><tbody><tr><th>Hadir</th>';
         htmlToday += '<th>'+tmpH+'</th></tr><tr>';
         htmlToday += '<th>Sakit</th><th>'+tmpS+'</th></tr><tr>';
-        htmlToday += '<th>Izin</th><th>'+tmpI+'</th></tr><tr><th>Absen</th><th>'+tmpA+'</th></tr></tbody></table>';
+        htmlToday += '<th>Izin</th><th>'+tmpI+'</th></tr><tr><th>Absen</th><th>'+tmpA+'</th></tr>';
+        htmlToday += '<tr style="background-color: #2943dc"><th>Total</th><th>'+len+'</th></tr></tbody></table>';
 
         $('#tableToday').html(htmlToday);
 
@@ -377,6 +382,10 @@
                 htmlX += '<table class="table table-striped table-sm bg-info text-light">';
                 htmlX += '<thead><tr style="background-color: #006c7c"><th>Kelas X</th><th>H</th><th>S</th><th>I</th><th>A</th></tr></thead>';
                 htmlX += '<tbody>';
+                totx_h = 0;
+                totx_s = 0;
+                totx_i = 0;
+                totx_a = 0;
                 for(l=0; l<x.length; l++){
                     htmlX += '<tr>';
                     htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","none")>'+x[l].kelas+'</a></td>';
@@ -385,12 +394,26 @@
                     htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","I")>'+x[l].i+'</a></td>';
                     htmlX += '<td><a href="#" onclick=modalList("'+x[l].kelas+'","A")>'+x[l].a+'</a></td>';
                     htmlX += '</tr>';
+                    totx_h += x[l].h;
+                    totx_s += x[l].s;
+                    totx_i += x[l].i;
+                    totx_a += x[l].a;
                 }
+                htmlX += '<tr style="background-color: #006c7c">';
+                htmlX += '<td>Total</td>';
+                htmlX += '<td>'+totx_h+'</td>';
+                htmlX += '<td>'+totx_s+'</td>';
+                htmlX += '<td>'+totx_i+'</td>';
+                htmlX += '<td>'+totx_a+'</td>';
                 htmlX +='</tbody></table>';
 
                 htmlXI += '<table class="table table-striped table-sm bg-secondary text-light">';
                 htmlXI += '<thead><tr style="background-color: #454b52"><th>Kelas XI</th><th>H</th><th>S</th><th>I</th><th>A</th></tr></thead>';
                 htmlXI += '<tbody>';
+                totxi_h = 0;
+                totxi_s = 0;
+                totxi_i = 0;
+                totxi_a = 0;
                 for(l=0; l<xi.length; l++){
                     htmlXI += '<tr>';
                     htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","none")>'+xi[l].kelas+'</a></td>';
@@ -399,12 +422,26 @@
                     htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","I")>'+xi[l].i+'</a></td>';
                     htmlXI += '<td><a href="#" onclick=modalList("'+xi[l].kelas+'","A")>'+xi[l].a+'</a></td>';
                     htmlXI += '</tr>';
+                    totxi_h += xi[l].h;
+                    totxi_s += xi[l].s;
+                    totxi_i += xi[l].i;
+                    totxi_a += xi[l].a;
                 }
+                htmlXI += '<tr style="background-color: #454b52">';
+                htmlXI += '<td>Total</td>';
+                htmlXI += '<td>'+totxi_h+'</td>';
+                htmlXI += '<td>'+totxi_s+'</td>';
+                htmlXI += '<td>'+totxi_i+'</td>';
+                htmlXI += '<td>'+totxi_a+'</td>';
                 htmlXI +='</tbody></table>';
 
                 htmlXII += '<table class="table table-striped table-sm bg-success text-light">';
                 htmlXII += '<thead><tr style="background-color: #00742e"><th>Kelas XII</th><th>H</th><th>S</th><th>I</th><th>A</th></tr></thead>';
                 htmlXII += '<tbody>';
+                totxii_h = 0;
+                totxii_s = 0;
+                totxii_i = 0;
+                totxii_a = 0;
                 for(l=0; l<xii.length; l++){
                     htmlXII += '<tr>';
                     htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","none")>'+xii[l].kelas+'</a></td>';
@@ -413,7 +450,17 @@
                     htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","I")>'+xii[l].i+'</a></td>';
                     htmlXII += '<td><a href="#" onclick=modalList("'+xii[l].kelas+'","A")>'+xii[l].a+'</a></td>';
                     htmlXII += '</tr>';
+                    totxii_h += xii[l].h;
+                    totxii_s += xii[l].s;
+                    totxii_i += xii[l].i;
+                    totxii_a += xii[l].a;
                 }
+                htmlXII += '<tr style="background-color: #00742e">';
+                htmlXII += '<td>Total</td>';
+                htmlXII += '<td>'+totxii_h+'</td>';
+                htmlXII += '<td>'+totxii_s+'</td>';
+                htmlXII += '<td>'+totxii_i+'</td>';
+                htmlXII += '<td>'+totxii_a+'</td>';
                 htmlXII +='</tbody></table>';
             },
             async: false

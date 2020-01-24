@@ -305,6 +305,8 @@
                             html += '<option value="I" >Izin</option>';
                             html += '<option value="S" >Sakit</option>';
                             html += '<option value="Z" selected>Kosong</option>';
+                        }else{
+                            html += '<option value="A" selected>Absen</option>';
                         }
                         html += '</select>';
                         html += '</td></tr>';   
@@ -413,6 +415,7 @@
         formData.append('from_date', "");
         formData.append('to_date', "");
         formData.append('to_name', "LAPORAN");
+        formData.append('from_name', $('#my-name').val());
 
         $.ajax({
             url: '/upload_lapor',

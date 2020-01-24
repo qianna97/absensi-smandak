@@ -986,7 +986,7 @@ app.post('/upload_lapor', function (req, res){
         dataSurat.from_date = fields.from_date;
         dataSurat.to_date = fields.to_date;
         dataSurat.to_name = fields.to_name;
-        dataSurat.from_name = "Testing";
+        dataSurat.from_name = fields.from_name;
         dataSurat.confirm = 0;
         dataSurat.date_submit = dateformat(new Date(), "hh:MM-dd/mm/yyyy");
 
