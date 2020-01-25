@@ -548,7 +548,7 @@
 
                 $(".dropdown-menu a").click(function(){
                     var name_item = $(this).text().split(" ");
-                    $('.dropdown-toggle').text(name_item[0]);
+                    $('.dropdown-toggle').text($(this).text());
                     var index = month.indexOf(name_item[0]);
                     recap(index, parseInt(name_item[1]), id_class);
                 });

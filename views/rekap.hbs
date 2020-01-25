@@ -7,7 +7,8 @@
         <script src="/assets/js/bootstrap.bundle.js"></script>
         <script src="/assets/js/bootstrap.js"></script>
         <script src="/assets/js/html2canvas.min.js"></script>
-        <script src="/assets/js/jspdf.min.js"></script>
+        <script lang="javascript" src="/assets/js/xlsx.full.min.js"></script>
+        <script lang="javascript" src="/assets/js/FileSaver.js"></script>
     </head>
     <style>
         table.table-bordered{
@@ -21,7 +22,9 @@
         }
     </style>
     <body style="font-family: 'Times New Roman';">
-        <!--<a href="#" onclick="print()">Unduh</a>-->
+        <div class="d-print-none">
+            <a href="#" onclick="print()">Unduh Excel</a>
+        </div>
         <input type="hidden" id="id_kelas" value="{{ id_kelas }}">
         <input type="hidden" id="month" value="{{ month }}">
         <input type="hidden" id="year" value="{{ year }}">
@@ -50,7 +53,7 @@
         success: function(resp){
             dayscount = Object.keys(resp[0]).length-2;
             html = "";
-            html += '<table class="table table-bordered table-sm" style="font-size: small;font-weight:bold">';
+            html += '<table id="mytable" class="table table-bordered table-sm" style="font-size: small;font-weight:bold">';
             html += '<thead class="thead-dark"><tr>';
             html += '<th scope="col" style="text-align: center;">No</th>';
             html += '<th scope="col">Nama</th>';
@@ -108,16 +111,17 @@
     });
 
 
+    var wb = XLSX.utils.table_to_book(document.getElementById('mytable'), {sheet:"Sheet JS"});
+    var wbout = XLSX.write(wb, {bookType:'xlsx', bookSST:true, type: 'binary'});
+    function s2ab(s) {
+        var buf = new ArrayBuffer(s.length);
+        var view = new Uint8Array(buf);
+        for (var i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+        return buf;
+    }
 
     function print(){
-        html2canvas($('#all'), {
-            onrendered: function(canvas) {     
-                var imgData = canvas.toDataURL('image/jpeg');              
-                var doc = new jsPDF('p', 'px', [canvas.width, canvas.height]);
-                
-                doc.addImage(imgData, 'JPEG', 10, 10, doc.internal.pageSize.width, doc.internal.pageSize.height);
-                doc.save('sample-file.pdf');
-            }
-        });
+        name = $('#id_kelas').val() + "_" + $('#month').val() + "_" + $('#year').val()
+        saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), name+'.xlsx');
     }
 </script>
