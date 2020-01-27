@@ -171,8 +171,6 @@
                 <div class="modal-body" style="padding:15px 50px;">
                     <div id="recap-name"></div>
                     <br>
-                    Z:Kosong | A:Absen | S:Sakit | I:Izin | L:Libur
-                    <br>
                     <div id="recap-list"></div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" onclick="edit_recap()" >Ubah</button>
@@ -602,8 +600,53 @@
                 for(i=0; i<(Object.keys(res[0]).length)-1; i++){
                     html += '<tr>';
                     html += '<td><center>'+(i+1).toString()+"</center></td>";
-                    html += '<td><input class="classDay" id="day'+ (i+1).toString() +'" value="'+ res[0]['day'+(i+1).toString()] +'"';
-                    html += '</tr>';
+                    html += '<td><select class="classDay" name="'+res[0].induk+'" id="'+res[0].induk+'">';
+                    value = res[0]['day'+(i+1).toString()];
+                    if(value == 'H'){
+                        html += '<option value="H" selected>Hadir</option>';
+                        html += '<option value="I" >Izin</option>';
+                        html += '<option value="S" >Sakit</option>';
+                        html += '<option value="A" >Absen</option>';
+                        html += '<option value="Z" >Kosong</option>';
+                        html += '<option value="L" >Libur</option>';
+                    }else if(value == 'I'){
+                        html += '<option value="H" >Hadir</option>';
+                        html += '<option value="I" selected>Izin</option>';
+                        html += '<option value="S" >Sakit</option>';
+                        html += '<option value="A" >Absen</option>';
+                        html += '<option value="Z" >Kosong</option>';
+                        html += '<option value="L" >Libur</option>';
+                    }else if(value == 'S'){
+                        html += '<option value="H" >Hadir</option>';
+                        html += '<option value="I" >Izin</option>';
+                        html += '<option value="S" selected>Sakit</option>';
+                        html += '<option value="A" >Absen</option>';
+                        html += '<option value="Z" >Kosong</option>';
+                        html += '<option value="L" >Libur</option>';
+                    }else if(value == 'Z'){
+                        html += '<option value="H" >Hadir</option>';
+                        html += '<option value="I" >Izin</option>';
+                        html += '<option value="S" >Sakit</option>';
+                        html += '<option value="A" >Absen</option>';
+                        html += '<option value="Z" selected>Kosong</option>';
+                        html += '<option value="L" >Libur</option>';
+                    }else if(value == 'A'){
+                        html += '<option value="H" >Hadir</option>';
+                        html += '<option value="I" >Izin</option>';
+                        html += '<option value="S" >Sakit</option>';
+                        html += '<option value="A" selected>Absen</option>';
+                        html += '<option value="Z" >Kosong</option>';
+                        html += '<option value="L" >Libur</option>';
+                    }else if(value == 'L'){
+                        html += '<option value="H" >Hadir</option>';
+                        html += '<option value="I" >Izin</option>';
+                        html += '<option value="S" >Sakit</option>';
+                        html += '<option value="A" >Absen</option>';
+                        html += '<option value="Z" >Kosong</option>';
+                        html += '<option value="L" selected>Libur</option>';
+                    }
+                    html += '</select>';
+                    html += '</td></tr>';  
                 }
                 html += "</table>";
                 $('#recap-list').html(html);

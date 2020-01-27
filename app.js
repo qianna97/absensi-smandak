@@ -440,11 +440,45 @@ app.post('/login-adm', (req, res )=> {
     });
 });
 
+app.post('/login-operator', (req, res )=> {
+    sess = req.session;
+
+    op = req.body.username;
+    pwd = req.body.password;
+
+    let sql = "SELECT * from operator WHERE operator='"+op+"' AND pwd='"+md5(pwd)+"'";
+    let query = conn.query(sql, (err, results) => {
+        if(err) throw err;
+        if(results.length == 0){
+            res.render('login-operator', {'dialog' : 'Password Salah'});
+        }else if(results.length > 1){
+            res.render('login-operator', {'dialog' : 'Login Error'});
+        }else{
+            sess.operator = results[0].operator;
+            sess.id_ = results[0].id;
+
+            res.redirect('/operator');
+        }
+    });
+});
+
+app.get('/operator',(req, res) => {
+    sess = req.session;
+
+    if(sess.operator){
+        res.render('operator');
+    }else{
+        res.render('login-operator');
+    }
+});
+
 app.get('/logout',(req, res) => {
     sess = req.session;
     page = '';
     if(sess.adm){
         page = '/admin';
+    }else if(sess.operator){
+        page = '/operator';
     }else{
         page = '/'; 
     }
@@ -675,7 +709,6 @@ app.post('/edit_user_recap', (req,res) => {
             n+= ",";
         }
     }
-
     let sql = "UPDATE "+rec+" SET "+n+" WHERE induk="+induk;
     let query = conn.query(sql, (err, results) => {
         if(err) throw err;

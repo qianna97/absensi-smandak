@@ -192,6 +192,7 @@
         var temp_3;
         var temp_4;
         len = 0;
+        tot = 1247;
         $.ajax({
             method: 'get',
             url: '/get_dashboard',
@@ -220,7 +221,9 @@
         htmlToday += '<th>'+tmpH+'</th></tr><tr>';
         htmlToday += '<th>Sakit</th><th>'+tmpS+'</th></tr><tr>';
         htmlToday += '<th>Izin</th><th>'+tmpI+'</th></tr><tr><th>Absen</th><th>'+tmpA+'</th></tr>';
-        htmlToday += '<tr style="background-color: #2943dc"><th>Total</th><th>'+len+'</th></tr></tbody></table>';
+        htmlToday += '<tr style="background-color: #2943dc"><th>Total</th><th>'+len+'</th></tr>';
+        htmlToday += '<tr style="background-color: #393434"><th>Belum Konfirmasi</th><th>'+(tot-len)+'</th></tr>';
+        htmlToday += '</tbody></table>';
 
         $('#tableToday').html(htmlToday);
 
